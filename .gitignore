@@ -1,0 +1,11 @@
+shp_graph_metrics/data/raw/*
+shp_graph_metrics/data/processed/*
+shp_graph_metrics/output/*
+!shp_graph_metrics/data/raw/.gitkeep
+!shp_graph_metrics/data/processed/.gitkeep
+!shp_graph_metrics/output/.gitkeep
+*.Rhistory
+shp_graph_metrics/*.RData
+*.Rproj.user
+*.Rbuildignore
+.Rproj.user
