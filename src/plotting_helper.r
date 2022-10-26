@@ -19,4 +19,19 @@ plotting_h3 = function(x,title,field_fill,leyend_title,xaxis,yaxis) {
   ggsave('output/map.pdf')
 }
 
+plotting_components = function(x,map_title,outputfile) {
+  
+  ggplot( ) +
+    geom_sf( data = x[,'id_comp'] , aes(fill = 'id_comp')) +
+    xlab( xaxis ) + ylab( yaxis ) +
+    ggtitle(title) +
+    +
+    annotation_scale(location = 'bl', width_hint = 0.5) +
+    annotation_north_arrow(location = 'bl', which_north = "true",
+                           pad_x = unit(0.75, 'in'), pad_y = unit(0.5, 'in'),
+                           style = north_arrow_fancy_orienteering)
+  print('Guardando mapa')
+  ggsave(glue('output/',outputfile,'.pdf'))
+}
+
 
