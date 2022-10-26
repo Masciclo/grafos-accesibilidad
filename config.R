@@ -1,9 +1,29 @@
 library(here)
 
-CICLO_SHP_PATH = here("data/raw/Ciclovias_base.shp")
-OSM_SHP_PATH = here("data/raw/Red_open_street_map.shp")
+##SHP PARA RED INTERMODAL
+CICLO_SHP_PATH = here("data/raw/Catastro 01-10-2022 con calidad/Catastro_01-10-2022_con_calidad.shp")
+OSM_SHP_PATH = here("data/Osm calles/Osm_calles.shp")
+##NOMBRE EN BASE DE DATOS
+CICLO_BD_NAME = "ciclo_rm" 
+OSM_BD_NAME ="osm_rm"
 
-OUTPUT_PATH = here('output')
+##SHP INHIBIDORES
+inhibidores_list = list()
+RED_BUSES_PATH = here("data/raw/06) Shapes 27Ago2022/Shapes 27Ago2022.shp")
+RED_PRINCIPALES_PATH = here("data/raw/red_principal.shp")
+
+##NOMBRE EN BASE DE DATOS
+RED_BUSES_NAME = 'red_buses'
+RED_PRINCIPALES_NAME = 'calles_principales'
+
+##SHP DESINHIBIDORES
+SEMAFOROS_PATH = here("data/raw/semaforos.shp")
+SEMAFOROS_NAME = ''
+
+##NOMBRE EN BASE DE DATOS
+NETWORK_BD = "full_net"
+
+OUTPUT_PATH = here('data/output')
 LOCAL_CUTOFF = 500 # Distancia en metros
 
 selected_setting = 'setting_1_base'
@@ -14,19 +34,19 @@ settings_list = list(
     filter_inoperative = FALSE,
     filter_projected = FALSE
   ),
-  setting_2_operatividad_nivel_1 = list(
-    filter_non_existent = expression(pull(., 'phanto') == 1 | pull(., 'proyect') == 1),
-    filter_inoperative = expression(pull(., 'op_ci') == 1 | pull(., 'op_cr') == 1),
+  escenario_2 = list(
+    filter_non_existent = FALSE,
+    filter_inoperative = FALSE,
     filter_projected = FALSE
   ),
-  setting_3_operatividad_nivel_2 = list(
-    filter_non_existent = expression(pull(., 'phanto') == 1 | pull(., 'proyect') == 1),
-    filter_inoperative = expression(pull(., 'op_ci') == 1),
+  escenario_3 = list(
+    filter_non_existent = expression(pull(., 'phanto') == 1 | pull(., 'proyect') == 1 ),
+    filter_inoperative = FALSE,
     filter_projected = FALSE
   ),
-  setting_4_operatividad_nivel_3 = list(
-    filter_non_existent = expression(pull(., 'phanto') == 1 | pull(., 'proyect') == 1),
-    filter_inoperative = expression(pull(., 'tip_op') == 1),
+  escenario_7 = list(
+    filter_non_existent = expression(pull(., 'phanto') == 1 | pull(., 'proyect') == 1 | pull(.,'o_op_ci') != 1),
+    filter_inoperative = FALSE,
     filter_projected = FALSE
   ),
   setting_5_proyectado = list(
