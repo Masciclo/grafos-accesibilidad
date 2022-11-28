@@ -7,7 +7,10 @@ dsn = paste0("PG:dbname='",dsn_database,"' host='",dsn_hostname,"' user='",dsn_u
 
 #' Prueba y conecta con la base de datos entregando como resultado una variable de conexión
 #' @param db Nombre de la base de datos 
-#' @param hot i
+#' @param host IP de la base de datos
+#' @param port Puerto de la base de datos (Por defecto en PostgreSQL es 5432)
+#' @param usr Usuario
+#' @param pass Contraseña
 #' @param conn Variable de conexión
 test_database_conection <- function(db, host, port, usr, pass) {
   tryCatch({
