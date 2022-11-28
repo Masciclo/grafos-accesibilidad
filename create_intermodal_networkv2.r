@@ -11,8 +11,7 @@
 # 1. Prueba de conexión con la base de datos.
 # 2.1 Leer, y cargar la base de ciclovias y calles a POSTGRESQL
     #2.1.1 Leer los archivos shp
-    #2.1.2 Filtrar campos de interés
-    #2.1.3 Cargar archivos a la base POSTGRESQL
+    #2.1.2 Cargar archivos a la base POSTGRESQL
 # 2.2 Union de ambas bases
 # 3. Importar capa a PostGIS
 
@@ -51,11 +50,7 @@ connec = test_database_conection(dsn_database,dsn_hostname,dsn_port,dsn_uid,dsn_
 ciclo_shp = st_read(CICLO_SHP_PATH)
 osm_shp = st_read(OSM_SHP_PATH)
 
-#2.1.2 Filtrar campos de interés
-#ciclo_shp = ciclo_shp[ciclo_shp$type != ]
-#osm_shp = osm_shp[osm_shp$type]
-
-#2.1.3 Cargar archivos a la base POSTGRESQL
+#2.1.2 Cargar archivos a la base POSTGRESQL
 if (import_shape_to_database(shp =  osm_shp, db = OSM_BD_NAME, connec = connec ) != T ) {
   print("No fue posible cargar la base de OpenStreatMap")
 }
