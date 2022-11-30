@@ -10,8 +10,8 @@
 # 0. Importacion de librerias y funciones.
 # 1. Prueba de conexión con la base de datos.
 # 2.1 Leer, y cargar la base de ciclovias y calles a POSTGRESQL
-    #2.1.1 Leer los archivos shp
-    #2.1.2 Cargar archivos a la base POSTGRESQL
+#2.1.1 Leer los archivos shp
+#2.1.2 Cargar archivos a la base POSTGRESQL
 # 2.2 Union de ambas bases
 # 3. Importar capa a PostGIS
 
@@ -66,4 +66,3 @@ full_net=sf::st_as_sf(data.table::rbindlist(list(st_read(dsn,CICLO_BD_NAME),st_r
 if (import_shape_to_database(shp = full_net, db = NETWORK_SHP, connec = connec) != TRUE) {
   print("No fue posible cargar la red completa")
 }
-

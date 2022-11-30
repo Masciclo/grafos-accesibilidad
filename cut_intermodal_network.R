@@ -55,7 +55,8 @@ lista_inhibidores = dict(RED_BUSES_NAME = st_read(RED_BUSES_PATH, options = "ENC
                          RED_PRINCIPALES_NAME = st_read(RED_PRINCIPALES_PATH))
 
 #Desinhibidores
-lista_desinhibidores = dict(SEMAFOROS_NAME = st_read(SEMAFOROS_PATH))
+lista_desinhibidores = dict('proyect' = st_read(connec,CICLO_BD_NAME) %>% filter(proyect == 0),
+                            'calidad' = st_read(connec,CICLO_BD_NAME) %>% filter(proyect == 0 & o_op_ci ==0))
 
 
 #2.1.2 Importar archivos a la base PostgreSQL
@@ -77,10 +78,26 @@ for (desinhibidor in lista_desinhibidores$keys) {
 }
 
 # 3. Cortar la red
-network = cut_intermodal_network(nombre_resultado = 'esc7',
+red_total = cut_intermodal_network(nombre_resultado = 'red_total',
                                  red = NETWORK_BD,
-                                 lista_inh = c(RED_BUSES_NAME,RED_PRINCIPALES_NAME),
+                                 filters = c("proyect = 0 or proyect isnull"),
+                                 lista_inh = c(RED_PRINCIPALES_NAME),
                                  buffer_inh = 10,
-                                 lista_des = c(SEMAFOROS_NAME),
+                                 lista_des = c("proyect"),
                                  buffer_des = 25,
-                                 )
+                                 conn = connec)
+
+create_and_clean_topology(shp = 'red_total',
+                          topo_name = 'red_total_topo',
+                          srid = srid,
+                          connec = connec,
+                          geometry = 'geometry')
+
+red_calidad = cut_intermodal_network(nombre_resultado = 'red_calidad',
+                                 red = NETWORK_BD,
+                                 filters = c("proyect = 0 or proyect isnull","o_op_ci = 0 or o_op_ci isnull")
+                                 lista_inh = c(RED_PRINCIPALES_NAME),
+                                 buffer_inh = 10,
+                                 lista_des = c('CALIDAD'),
+                                 buffer_des = 25,
+                                 conn = connec)

@@ -47,12 +47,16 @@
 # 6.7. Exportacion de un archivo geojson por cada componente.
 
 # 0. Importacion de librerias y funciones -------------------------------------
+packages <- c("here","dplyr","sf","igraph","lwgeom","rgdal")
+install.packages(setdiff(packages,rownames(installed.packages())))
 library(here)        # Gestionar rutas relativas
 library(dplyr)       # Trabajar con dataframes
 library(sf)          # Trabajar con simple features
+library(rgdal)
 library(igraph)      # Construir grafos
 library(tidygraph)   # Manipular grafos en formato de tablas
 library(lwgeom)      # Para utilizar la funcion st_split()
+     #
 
 # -----------------------------------------------------------------------------
 # ruta de carpeta en donde se localiza el archivo "calculate_metrics.R"
@@ -60,75 +64,33 @@ library(lwgeom)      # Para utilizar la funcion st_split()
 #   c:/ruta/del/archivo/calculate_metrics.R
 # y la ruta de la carpeta seria:
 #   c:/ruta/del/archivo/
-setwd('D:/+CICLO/repos/planarize/mas-ciclo/shp_graph_metrics')
+#setwd('~/home/grafos-accesibilidad/')
 # -----------------------------------------------------------------------------
 
 source(file = here('src/graph_helpers.R'))
+#Source(file = here("src/sql_helper.R"))
 source(file = here('config.R'))
 
 # Algoritmo y ejecucion --------------------------------------------------------
 # 1. Lectura de archivos de entrada (formato *.shp o *.geojson). ---------------
 # bicycle_network_gdf = join_polylines(sf::st_read(CICLO_SHP_PATH), sf::st_read(OSM_SHP_PATH))
-bicycle_network_gdf = sf::st_read(CICLO_SHP_PATH)
-bicycle_network_gdf = bicycle_network_gdf[!sf::st_is_empty(bicycle_network_gdf$geometry),]
-names(bicycle_network_gdf) = tolower(names(bicycle_network_gdf))
+dsn_database = "gis"
+dsn_hostname = "172.17.0.2"
+dsn_port = 5432
+dsn_pwd = "Masciclo2022"
+dsn_uid = "masciclo"
+
+dsn = paste0("PG:dbname='",dsn_database,"' host='",dsn_hostname,"' user='",dsn_uid,"' password='",dsn_pwd,"'")
+total_network_gdf = readOGR(dsn,
+                              "full_net") %>% st_as_sf
+total_network_gdf = total_network_gdf[!sf::st_is_empty(total_network_gdf$geometry),] 
+names(total_network_gdf) = tolower(names(total_network_gdf))
 
 # Validar columnas obligatorias
-missing_fields = !(compulsory_fields %in% names(bicycle_network_gdf))
+missing_fields = !(compulsory_fields %in% names(total_network_gdf))
 if (any(missing_fields)) {
   print(paste('Faltan algunas columnas obligatorias en el Dataframe:', compulsory_fields[missing_fields]))
 }
-
-# 2. Preproceso y limpieza de geometrías. --------------------------------------
-bicycle_network_gdf = split_polylines(
-  bicycle_network_gdf,
-  id_field='id_2'
-)
-
-x_osm_splitter = split_polylines(
-  sf::st_read(OSM_SHP_PATH),
-  id_field='id_osm'
-)
-
-
-# 3. split con red de calles:
-# 3.1. Limpia red de calles aplicando inhibidores y deshinibidores.
-x_osm_splitter = apply_disablers (
-  x_osm = sf::st_read(OSM_SHP_PATH),
-  disablers_list = list(
-    sf::st_read('data/raw/65f69d7c-a0ee-4ff5-b220-0168a3c2b756202041-1-16ubwo1.mcsv.shp'),
-    sf::st_read('data/raw/Primary_seconday.shp')
-  ),
-  enablers_list = list(
-    sf::st_read('data/raw/Semaforos.shp')
-  ),
-  enabler_buffer_threshold = 10,
-  disabler_buffer_threshold = 10
-)
-
-# 3.3 Split de red de calles
-x_osm_splitter = split_polylines(
-  x_osm_splitter,
-  id_field='id_osm'
-)
-
-
-# 3.2. Ejecuta el split con la red de calles
-bicycle_network_gdf = split_by_other_polylines(
-  bicycle_network_gdf,
-  x_osm_splitter,
-  id_field='id_2',
-)
-
-# 3.3 Unión con red de OSM
-total_network_gdf = sf::st_union(
-  bicycle_network_gdf,
-  x_osm_splitter,
-  by_feature = F
-)
-
-sf::write_sf(total_network_gdf,"planarizev1.geojson")
-sf::
 
 # 3. Conversión de tipo de dato sf a tipo de dato igraph (tidygraph). ----------
 total_igraph_raw = sf_to_igraph(
@@ -137,8 +99,8 @@ total_igraph_raw = sf_to_igraph(
 )
 
 # 4. Filtro de dataset según escenario. ----------------------------------------
-# Primero se filtran los no existentes.
-bicycle_igraph = bicycle_igraph_raw %>%
+#Primero se filtran los no existentes.
+bicycle_igraph = total_igraph_raw %>%
   activate(edges) %>%
   filter(!eval(settings_list[[selected_setting]]$filter_non_existent)) %>%
   activate(nodes) %>%
@@ -148,16 +110,41 @@ bicycle_igraph = bicycle_igraph_raw %>%
 # 5. Cálculo de indicadores ----------------------------------------------------
 
 # 5.1. Se agrega un identificador de componente a cada arco. -------------------
-bicycle_igraph = bicycle_igraph %>%
-  add_components(field_name='id_comp')
+bicycle_igraph = total_igraph_raw %>%
+  add_components(field_name='id_comp') %>% select(id_comp = 1)
+    
 
 # 5.2. Calcula indicadores para el caso general. -------------------------------
+print("Calculando edge_betweenness")
+edge_betweenness = estimate_edge_betweenness(graph = bicycle_igraph, e = E(bicycle_igraph), weights = get.edge.attribute(bicycle_igraph, 'weight'), cutoff=-1)
 gi_aristas = bicycle_igraph %>%
   activate(edges) %>%
-  mutate(edge_betweenness = estimate_edge_betweenness(., weights=get.edge.attribute(., 'weight'), cutoff=0)) %>%
-  add_edge_closeness(field_closeness='edge_closeness', closeness_mode="all", local_cutoff=0) %>%
-  add_straightness(field_straightness='edge_straightness', cutoff=0) %>%
-  mutate(local_betweenness = estimate_edge_betweenness(., weights=get.edge.attribute(., 'weight'), cutoff=LOCAL_CUTOFF)) %>%
+  mutate(edge_betweenness = edge_betweenness)
+
+print("Calculando edge_closeness y edge_straightness")
+ari_edge_closeness = add_edge_closeness(bicycle_igraph,field_closeness='edge_closeness', closeness_mode="all", local_cutoff=-1)
+start.time = Sys.time()
+ari_straightness = add_straightness(bicycle_igraph,field_straightness='edge_straightness', cutoff=-1)
+end.time = Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
+
+gi_aristas = bicycle_igraph %>%
+  activate(edges) %>% 
+  add_edge_closeness(field_closeness='edge_closeness', closeness_mode="all", local_cutoff=-1) %>%
+  add_straightness(field_straightness='edge_straightness', cutoff=-1)
+
+print("Calculando locales (betweenness, cleseness y straightness")
+local_betweenness = estimate_edge_betweenness(bicycle_igraph, weights=get.edge.attribute(bicycle_igraph, 'weight'), cutoff=LOCAL_CUTOFF)
+edge_closeness = add_edge_closeness(bicycle_igraph,field_closeness='local_closeness', closeness_mode="all", local_cutoff=LOCAL_CUTOFF)
+straightness = add_straightness(bicycle_igraph,field_straightness='local_straightness', cutoff=LOCAL_CUTOFF)
+diameter_network = add_diameter_of_network_components(bicycle_igraph,field_components_name='id_comp', field_diameter_name='diameter')
+
+
+gi_aristas = gi_aristas %>%
+  activate(edges) %>%
+  mutate(local_betweenness = estimate_edge_betweenness(bicycle_igraph, weights=get.edge.attribute(., 'weight'), cutoff=LOCAL_CUTOFF)) %>%
   add_edge_closeness(field_closeness='local_closeness', closeness_mode="all", local_cutoff=LOCAL_CUTOFF) %>%
   add_straightness(field_straightness='local_straightness', cutoff=LOCAL_CUTOFF) %>%
   add_diameter_of_network_components(field_components_name='id_comp', field_diameter_name='diameter')

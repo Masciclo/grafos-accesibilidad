@@ -1,5 +1,15 @@
 library(here)
 
+##VARIABLES DE CONEXIÓN CON LA BASE DE DATOS
+dsn_database = "gis"
+dsn_hostname = "172.17.0.2"
+dsn_port = 5432
+dsn_pwd = "Masciclo2022"
+dsn_uid = "masciclo"
+
+#SRID 
+srid = 32719
+
 ##SHP PARA RED INTERMODAL
 CICLO_SHP_PATH = here("data/raw/Catastro 01-10-2022 con calidad/Catastro_01-10-2022_con_calidad.shp")
 OSM_SHP_PATH = here("data/Osm calles/Osm_calles.shp")
@@ -8,7 +18,6 @@ CICLO_BD_NAME = "ciclo_rm"
 OSM_BD_NAME ="osm_rm"
 
 ##SHP INHIBIDORES
-inhibidores_list = list()
 RED_BUSES_PATH = here("data/raw/06) Shapes 27Ago2022/Shapes 27Ago2022.shp")
 RED_PRINCIPALES_PATH = here("data/raw/red_principal.shp")
 

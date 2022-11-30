@@ -25,6 +25,8 @@
 
 
 # Importacion de librerias y funciones -----------------------------------------
+packages <- c("dplyr","sf","igraph","lwgeom","tibble","tidygraph")
+install.packages(setdiff(packages,rownames(installed.packages())))
 
 library(dplyr)       # Trabajar con dataframes
 library(sf)          # Trabajar con simple features
@@ -42,7 +44,7 @@ library(tibble)
 # library(purrr)
 # library(rgeos)
 
-PRECISION = 1 # Numero de cifras decimales: 1 = 10 cm; 2 = 1 cm.
+PRECISION = 6 # Numero de cifras decimales: 1 = 10 cm; 2 = 1 cm.
 
 # Definicion de funciones ------------------------------------------------------
 
@@ -56,6 +58,8 @@ PRECISION = 1 # Numero de cifras decimales: 1 = 10 cm; 2 = 1 cm.
 #' @return Capa con inhibiores y desinhibidores
 #' @examples
 #' apply_disablers(osm_shp, list(recorridos_transantiago,calles_principales),list(semaforos),100,100)
+#' 
+#' "type"  != 'path' and "type" != 'service' and "type" != 'living_street'
 apply_disablers = function(
   x_osm,
   disablers_list,
@@ -76,18 +80,18 @@ apply_disablers = function(
   #Para cada desinhibidor 
   for (x_enabler in enablers_list) {
     #Se asigna el CRS de la capa OSM a la capa de desinhibidor
-    x_enabler_buffer = sf::st_transform(x_enabler, st_crs(filtered_x_osm)) %>% mutate
+    x_enabler_buffer = sf::st_transform(x_enabler %>% st_as_sf, st_crs(filtered_x_osm)) %>% mutate
     #Se crea el buffer siguiendo el tamaño asignado en enabler_buffer_threshold
     x_enabler_buffer = sf::st_buffer(x_enabler_buffer, enabler_buffer_threshold, nQuadSegs=4) #%>%
     
     #Se reduce la precisión de ambas capas para obtener mejores geométricas
-    x_enabler_buffer = x_enabler_buffer %>% sf::st_set_precision(1e3)  %>% add_column( level = 1 )
-    filtered_x_osm = filtered_x_osm %>% st_set_precision(1e3)
+    x_enabler_buffer = x_enabler_buffer %>% sf::st_set_precision(1e5)  %>% add_column( level = 2 )
+    filtered_x_osm = filtered_x_osm %>% st_set_precision(1e5)
     #x_enabler_buffer = st_union(st_make_valid(x_enabler_buffer))
     
     # it keeps the max value of the enabler
     id_osm_level = sf::st_join(filtered_x_osm, x_enabler_buffer) %>%
-      select(c(id_osm, level)) %>%
+      select(c(id_osm, level,enabler_level)) %>%
       as.data.frame() %>%
       select(-geometry) %>%
       group_by(id_osm) %>%
@@ -101,14 +105,14 @@ apply_disablers = function(
   
   # Disable ways
   for (x_disabler in disablers_list) {
-    x_disabler = tibble::rowid_to_column(x_disabler, "id_disabler") %>% add_column( level = sample(0:1,1) ) %>% 
+    x_disabler = tibble::rowid_to_column(x_disabler %>% st_as_sf, "id_disabler") %>% add_column( level = 1 ) %>% 
       select(c('id_disabler', 'level'))
-    x_disabler_buffer = sf::st_transform(x_disabler, st_crs(filtered_x_osm)) #%>%
+    x_disabler_buffer = sf::st_transform(x_disabler %>% st_as_sf, st_crs(filtered_x_osm)) #%>%
     x_disabler_buffer = sf::st_buffer(x_disabler_buffer, disabler_buffer_threshold, nQuadSegs=4) #%>%
     
     # filtered_x_osm[0:1000,][sf::st_intersects(filtered_x_osm[0:1000,], x_inhibitor_buffer, sparse = FALSE),]
-    filtered_x_osm = filtered_x_osm %>% st_set_precision(1e3)
-    x_disabler_buffer = x_disabler_buffer %>% st_set_precision(1e3) 
+    filtered_x_osm = filtered_x_osm %>% st_set_precision(1e5)
+    x_disabler_buffer = x_disabler_buffer %>% st_set_precision(1e5) 
     
     deleted_segments = filtered_x_osm %>%
       select(c('id_osm', 'enabler_level')) %>%
@@ -118,7 +122,7 @@ apply_disablers = function(
     filtered_x_osm = filtered_x_osm %>% st_set_precision(1e3)
     deleted_segments = deleted_segments %>%
       st_set_precision(1e3) %>%
-      st_buffer(1, nQuadSegs=4)
+      st_buffer(9, nQuadSegs=4)
     
     deleted_segments = st_union(st_make_valid(deleted_segments)) 
     filtered_x_osm = st_erase(sf::st_make_valid(filtered_x_osm), deleted_segments)
@@ -233,7 +237,11 @@ split_polylines = function(x, id_field='id_2', geom_precision=10^PRECISION) {
   # Recorre x fila a fila y compara cada fila contra el resto de las filas.
   # si hay intersecciones, subdivide las polilineas. Las filas subdivididas
   # se van almacenando en split_df, que al principio esta vacio.
-
+  if (!(id_field %in% colnames(x))){
+    x = mutate(x, id_field = 1:nrow(x))
+  }
+  
+  
   split_df = data.frame()
   
   for (row in 1:nrow(x)) {
@@ -301,11 +309,11 @@ sf_to_igraph = function(x, directed = FALSE, geom_precision=PRECISION) {
     # que luego puede relacionarse con su nodo inicial y final.
     mutate(weight = sf::st_length(.$geometry)) # se agrega el weight = distancia de las
     # polilineas (subdivididas, si se les ha aplicado split_polylines() antes)
-  
+  print(nrow(edges))
   nodes <- edges %>%        # Los nodos del grafo son los puntos inicial y final de las aristas.
     sf::st_coordinates() %>%    # Encontrar las ubicaciones de los nodos. Se obtiene una matriz.
     as_tibble() %>%         # Pasar la matriz a dataframe.
-    rename(edgeID = L1) %>% # Asociar los nodos al nombre de las aristas asignado en el paso anterior 
+    dplyr::rename(edgeID = L1) %>% # Asociar los nodos al nombre de las aristas asignado en el paso anterior 
     group_by(edgeID) %>%    # Seleccionar por aristas
     slice(c(1, n())) %>%    # Vector de indices
     ungroup() %>%           # Tomar los nodos de cada arista
@@ -320,18 +328,19 @@ sf_to_igraph = function(x, directed = FALSE, geom_precision=PRECISION) {
     # Se usa la funci?n group_indices en dplyr para dar a cada grupo de combinaciones (X,Y) un ?ndice ?nico.
     
     mutate(xy = paste(.$X, .$Y)) %>%    # A?adir los nodos
-    mutate(nodeID = group_indices(., factor(xy, levels = unique(xy)))) %>% # A?adir los indices
+    mutate(nodeID = group_by(., factor(xy, levels = unique(xy)))) %>% # A?adir los indices
+    mutate(nodeID = group_indices(nodeID)) %>%
     select(-xy) # Indicar que lo anterior se realiza para cada nodo
-  
+  print(nrow(nodes))
   # A cada uno de los nodos iniciales y finales se le ha asignado un ID,
   # de este modo se pueden asociar estos ?ndices con los de las aristas. 
-  # En otras palabras, se puede especificar para cada arista, en qu? nodo comienza y en qu? nodo termina. 
+  # En otras palabras, se puede especificar para cada arista, en qu? nodo comienza y en qu? nodo termina.
+  
   
   # Nodos de inicio
   source_nodes <- nodes %>%           # Seleccionar los nodos
     filter(start_end == 'start') %>%  # Filtrar solo los de inicio
     pull(nodeID)                      # Obtener IDs
-  
   # Nodos de fin
   target_nodes <- nodes %>%          # Seleccionar los nodos
     filter(start_end == 'end') %>%   # Filtrar solo los de fin
@@ -432,7 +441,7 @@ add_diameter_of_network = function(x, field_name='diameter') {
 #' @param x Un objeto tidygraph.
 #' @param field_closeness Nombre de la columna que el valor de closeness para el arco.
 #' @param closeness_mode El modo de closeness, en el caso de grafos no dirigidos siempre es all.
-#' @return Un objeto tidygraph con las el grafo que representa a la red.
+#' @return Un objeto tidygraph con el grafo que representa a la red.
 #' @export
 #' @examples
 #' bicycle_igraph %>%
@@ -649,7 +658,7 @@ calculate_components_attributes = function(x, field_components_name='component')
     # Calculo de largo promedio de los arcos del subgrafo (considerando filtro ci_o_cr == 1).
     largo_prom = component_subgraph %>%
       activate(edges) %>%
-      filter(get.edge.attribute(., 'ci_o_cr') == 1) %>%
+      #filter(get.edge.attribute(., 'ci_o_cr') == 1) %>%
       activate(nodes) %>%
       filter(!node_is_isolated()) %>%
       get.edge.attribute('weight') %>%
