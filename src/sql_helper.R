@@ -3,6 +3,8 @@ library(RPostgreSQL)
 library(glue)
 library(rgdal)
 
+source(file = here('config.R'))
+
 dsn = paste0("PG:dbname='",dsn_database,"' host='",dsn_hostname,"' user='",dsn_uid,"' password='",dsn_pwd,"'")
 
 #' Prueba y conecta con la base de datos entregando como resultado una variable de conexión
@@ -65,7 +67,7 @@ create_and_clean_topology = function(shp,topo_name,srid,connec,geometry) {
               update {shp} set topo_geom = topology.toTopoGeom({geometry},'{topo_name}',1,0.001);")
   )
   finish_time = Sys.time()
-  print("Tiempo empleado:")
+  print("Tiempo empleado en cortar la topología:")
   print(finish_time-init_time)
 }
 
@@ -128,17 +130,15 @@ create_buffer = function( lista_shps, metros = 0 , connec ) {
 #' @param conn Variable de conexion
 buffer_difference = function(nombre_resultado,buffer_inhibidores,buffer_desinhibidores,conn) {
   
-  if (check_table_existence("bf_{nombre_resultado}",conn)){
-    dbSendQuery(conn,glue("CREATE TABLE bf_{nombre_resultado} as
+    dbSendQuery(conn,glue("CREATE TABLE IF NOT EXISTS bf_{nombre_resultado} as
                                   select 
                                   st_difference(bi.geometry,bd.geometry) as geometry
                                   from {buffer_inhibidores} bi, {buffer_desinhibidores} bd;
                                   
-                                  create index idx_bf_{nombre_resultado}
+                                  create index IF NOT EXISTS idx_bf_{nombre_resultado}
                                   on bf_{nombre_resultado}
                                   using GIST(geometry);")
     )
-  }
   return("bf_{nombre_resultado}")
 }
 
@@ -299,11 +299,19 @@ cut_intermodal_network = function(nombre_resultado, red, filters = c(), lista_in
   }
 
   
-  return(dbSendQuery(conn,finalQuery))
+  dbSendQuery(conn,finalQuery)
+  
+  create_and_clean_topology(shp = nombre_resultado,
+                            topo_name = paste0(nombre_resultado,"_topo"),
+                            srid = srid,
+                            connec = conn,
+                            geometry = 'geometry')
   
   finish_time = Sys.time()
   print("Tiempo empleado:")
   print(finish_time-init_time)
+  
+  
 }
 
 #' Actualiza el SRID una vez modificada las coordenadas de geometría
