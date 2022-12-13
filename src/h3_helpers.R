@@ -138,18 +138,17 @@
 #   return(result)
 # }
 
+##SEPARAR UNIÓN BASAL DE HEXAGONOS CON RESULTADOS POR ESCENARIO##
 
-#' Prueba y conecta con la base de datos entregando como resultado una variable de conexión
 #' @param nombre_resultado Nombre de la base de datos 
 #' @param h Nombre de shape de hexágonos
 #' @param x Nombre de shape de red
 #' @param conn Variable de conexión
-to_hex('prueba_join',"Datos_Hexa_Final",'red_total',connec)
-to_hex = function(nombre_resultado,h,x,conn) {
+to_h3 = function(h_schema,h,x_schema,x,conn) {
   dbGetQuery(connec,
-             glue("create table {nombre_resultado} as
+             glue("create table {x}_hexs as
               SELECT 
-                pc.id as id_hex,
+                pc.*,
                 id_comp,
                 ci_total,
                 Fantom,
@@ -161,9 +160,8 @@ to_hex = function(nombre_resultado,h,x,conn) {
                 cr_M,
                 ci_N_B,
                 ci_N_M,
-                metros_OSM,
-                pc.geom
-              from \"hexs\".\"{h}\" pc
+                metros_OSM
+              from \"{h_schema}\".\"{h}\" pc
               left join (
                 select 
                   id_hex,
@@ -180,7 +178,7 @@ to_hex = function(nombre_resultado,h,x,conn) {
                 	  	tc.id_comp as id_comp,
                 	  	st_intersection(tc.geometry,pc.geom) as geometry,
                 	  	sum(st_length(geometry)) as largo	
-                	  from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                	  from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                 	  where st_intersects(tc.geometry,pc.geom) = TRUE
                 	  group by id_hex,id_comp,tc.geometry,pc.geom
                   ) as inter
@@ -196,7 +194,7 @@ to_hex = function(nombre_resultado,h,x,conn) {
                 		pc.id as id_hex,
                 		tc.ciclo_calle as ciclo_calle,
                 		st_intersection(tc.geometry,pc.geom) as geometry
-                	from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                 	where st_intersects(tc.geometry,pc.geom) = TRUE
                 ) as i_largo_ciclo
                 where ciclo_calle = 1
@@ -210,9 +208,9 @@ to_hex = function(nombre_resultado,h,x,conn) {
                 from (
                 	select 
                 		pc.id as id_hex,
-                		tc.\"PHANTO\" as phanto,
+                		tc.\"phanto\" as phanto,
                 		st_intersection(tc.geometry,pc.geom) as geometry
-                	from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                 	where st_intersects(tc.geometry,pc.geom) = TRUE
                 ) as i_p
                 where phanto = 1
@@ -228,7 +226,7 @@ to_hex = function(nombre_resultado,h,x,conn) {
                 		pc.id as id_hex,
                 		tc.\"proyect\" as proyect,
                 		st_intersection(tc.geometry,pc.geom) as geometry
-                	from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                 	where st_intersects(tc.geometry,pc.geom) = TRUE
                 ) as i_p_1
                 where proyect = 1
@@ -244,7 +242,7 @@ to_hex = function(nombre_resultado,h,x,conn) {
                 		pc.id as id_hex,
                 		tc.\"proyect\" as proyect,
                 		st_intersection(tc.geometry,pc.geom) as geometry
-                	from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                 	where st_intersects(tc.geometry,pc.geom) = TRUE
                 ) as i_p_2
                 where proyect = 2
@@ -260,7 +258,7 @@ to_hex = function(nombre_resultado,h,x,conn) {
                    pc.id as id_hex,
                    tc.\"o_op_ci\" as o_op_ci,
                    st_intersection(tc.geometry,pc.geom) as geometry
-                  from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                  from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                   where st_intersects(tc.geometry,pc.geom)= TRUE
                 ) as i_op_0
                 where o_op_ci = 0
@@ -276,7 +274,7 @@ to_hex = function(nombre_resultado,h,x,conn) {
                    pc.id as id_hex,
                    tc.\"o_op_ci\" as o_op_ci,
                    st_intersection(tc.geometry,pc.geom) as geometry
-                  from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                  from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                   where st_intersects(tc.geometry,pc.geom)= TRUE
                 ) as i_op_1
                 where o_op_ci = 1
@@ -292,7 +290,7 @@ to_hex = function(nombre_resultado,h,x,conn) {
                    pc.id as id_hex,
                    tc.\"o_op_cr\" as o_op_cr,
                    st_intersection(tc.geometry,pc.geom) as geometry
-                  from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                  from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                   where st_intersects(tc.geometry,pc.geom)= TRUE
                 ) as i_cr_0
                 where o_op_cr = 0
@@ -308,7 +306,7 @@ to_hex = function(nombre_resultado,h,x,conn) {
                    pc.id as id_hex,
                    tc.\"o_op_cr\" as o_op_cr,
                    st_intersection(tc.geometry,pc.geom) as geometry
-                  from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                  from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                   where st_intersects(tc.geometry,pc.geom)= TRUE
                 ) as i_cr_1
                 where o_op_cr = 1
@@ -324,7 +322,7 @@ to_hex = function(nombre_resultado,h,x,conn) {
                 		pc.id as id_hex,
                 		tc.ciclo_calle as ciclo_calle,
                 		st_intersection(tc.geometry,pc.geom) as geometry
-                	from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                 	where st_intersects(tc.geometry,pc.geom) = TRUE
                 ) as i_largo_osm
                 where ciclo_calle = 0
@@ -348,10 +346,10 @@ to_hex = function(nombre_resultado,h,x,conn) {
                       from (
                     	  select 
                     	  	pc.id as id_hex,
-                    	  	tc.\"CICLOVIA_N\" as CICLOVIA_N,
+                    	  	tc.\"ciclovia_n\" as CICLOVIA_N,
                     	  	tc.\"o_op_ci\" as o_op_ci,
                           st_intersection(tc.geometry,pc.geom) as geometry
-                        from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                        from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                         where st_intersects(tc.geometry,pc.geom) = TRUE
                         group by id_hex,CICLOVIA_N,o_op_ci,tc.geometry,pc.geom
                       ) as inters
@@ -378,10 +376,10 @@ to_hex = function(nombre_resultado,h,x,conn) {
                       from (
                     	  select 
                     	  	pc.id as id_hex,
-                    	  	tc.\"CICLOVIA_N\" as CICLOVIA_N,
+                    	  	tc.\"ciclovia_n\" as CICLOVIA_N,
                   	  	  tc.\"o_op_ci\" as o_op_ci,
                           st_intersection(tc.geometry,pc.geom) as geometry
-                        from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
+                        from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                         where st_intersects(tc.geometry,pc.geom) = TRUE
                         group by id_hex,CICLOVIA_N,o_op_ci,tc.geometry,pc.geom
                       ) as inters
@@ -395,82 +393,3 @@ to_hex = function(nombre_resultado,h,x,conn) {
              )
   )
   }
-
-
-
-"left join (
-                select 
-                  id_hex,
-                  id_comp
-                from (
-                  SELECT
-                    id_hex,
-                    id_comp,
-                    row_number() over (partition by id_hex order by largo desc) as rnk,
-                    largo
-                  from (
-                	  select 
-                	  	pc.id as id_hex,
-                	  	tc.id_comp as id_comp,
-                	  	st_intersection(tc.geometry,pc.geom) as geometry,
-                	  	sum(st_length(geometry)) as largo	
-                	  from \"public\".\"{x}\" tc, \"hexs\".\"{h}\" pc
-                	  where st_intersects(tc.geometry,pc.geom) = TRUE
-                	  group by id_hex,id_comp,tc.geometry,pc.geom
-                  ) as inter
-                ) as last
-                where rnk = 1) as int
-                on pc.id = int.id_hex"
-
-
-dbGetQuery(connec,
-            "create table {'nombre_resultado'} as
-              SELECT 
-                pc.id as id_hex,
-                int.id_comp,
-                pc.geom
-              from hexs.\"Datos_Hexa_Final\" pc 
-              left join (
-                select 
-                  id_hex,
-                  id_comp
-                from (
-                  SELECT
-                    id_hex,
-                    id_comp,
-                    row_number() over (partition by id_hex order by largo desc) as rnk,
-                    largo
-                  from (
-                	  select 
-                	  	pc.id as id_hex,
-                	  	tc.id_comp as id_comp,
-                	  	st_intersection(tc.geometry,pc.geom) as geometry,
-                	  	sum(st_length(geometry)) as largo	
-                	  from \"public\".{'x'} tc, \"hexs\".{'hex'} pc
-                	  where st_intersects(tc.geometry,pc.geom) = TRUE
-                	  group by id_hex,id_comp,tc.geometry,pc.geom
-                  ) as inter
-                ) as last
-                where rnk = 1) as int
-                on pc.id = int.id_hex
-                left join (
-                select
-	                id_hex,
-	                sum(st_length(geometry)) as ci_total
-                from(
-                	select 
-                		pc.id as id_hex,
-                		tc.ciclo_calle as ciclo_calle,
-                		st_intersection(tc.geometry,pc.geom) as geometry
-                	from \"public\".{'x'} tc, \"hexs\".{'hex'} pc
-                	where st_intersects(tc.geometry,pc.geom) = TRUE
-                ) as i_largo_ciclo
-                where ciclo_calle = 1
-                group by id_hex
-                )"
-            )
-
-sd = dbGetQuery(connec,
-                "select id_hex,id_comp ,sum(st_length(geometry)) from prueba_concepto.prueba_intersection pi group by id_hex,id_comp")
-
-

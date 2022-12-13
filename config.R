@@ -10,6 +10,9 @@ dsn_uid = "masciclo"
 #SRID 
 srid = 32719
 
+##NOMBRE BASE OSM RAW
+OSM_RAW_BD_NAME = ""
+
 ##NOMBRE EN BASE DE DATOS
 CICLO_BD_NAME = "ciclo_rm" 
 OSM_BD_NAME ="osm_rm"
@@ -22,17 +25,21 @@ RED_PRINCIPALES_NAME = 'calles_principales'
 SEMAFOROS_NAME = ''
 
 ##NOMBRE EN BASE DE DATOS
-NETWORK_BD = "full_net"
+NETWORK_BD_NAME = "full_net"
+
+##HEXAGONOS
+HEX_NAME = 'Hexagonos_H3_NSE'
+
+##SCHEMAS
+H_SCHEMA = 'hexs'
 
 LOCAL_CUTOFF = 500 # Distancia en metros
-
-selected_setting = 'setting_1_base'
 
 settings_list = list(
   setting_1_base = list(
     nombre_resultado = 'red_total',
-    red = NETWORK_BD,
-    filters = c("proyect = 0 and proyect isnull"),
+    red = NETWORK_BD_NAME,
+    filters = c("proyect = 0 or proyect isnull"),
     lista_inh = RED_PRINCIPALES_NAME,
     buffer_inh = 10,
     lista_des = "proyect",
@@ -41,7 +48,7 @@ settings_list = list(
   ),
   setting_2_base = list(
     nombre_resultado = 'red_totalv2',
-    red = NETWORK_BD,
+    red = NETWORK_BD_NAME,
     filters = c("proyect = 0"),
     lista_inh = RED_PRINCIPALES_NAME,
     buffer_inh = 10,

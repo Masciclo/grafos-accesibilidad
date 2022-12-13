@@ -39,7 +39,7 @@ test_database_conection <- function(db, host, port, usr, pass) {
 #' @param conn Variable de conexión
 import_shape_to_database = function(shp,db,conn) {
   tryCatch({
-    dbWriteTable(connec,db,shp)
+    dbWriteTable(connec,db,shp, overwrite = TRUE)
   })
 }
 
@@ -61,7 +61,7 @@ check_table_existence = function(table,conn) {
 #' @param conn Variable de conexion
 create_and_clean_topology = function(shp,topo_name,srid,connec,geometry) {
   init_time = Sys.time()
-  dbGetQuery(connec,glue(
+  dbSendQuery(connec,glue(
              "SELECT topology.CreateTopology('{topo_name}',{srid});
               SELECT topology.AddTopoGeometryColumn('{topo_name}','public','{shp}','topo_geom','LINESTRING');
               update {shp} set topo_geom = topology.toTopoGeom({geometry},'{topo_name}',1,0.001);")
@@ -308,7 +308,7 @@ cut_intermodal_network = function(nombre_resultado, red, filters = c(), lista_in
                             geometry = 'geometry')
   
   finish_time = Sys.time()
-  print("Tiempo empleado:")
+  print("Tiempo total:")
   print(finish_time-init_time)
   
   
@@ -331,3 +331,13 @@ change_geometry = function( shp, new_coords, old_coords, conn ) {
   dbGetQuery(conn = conn, statement = glue ("ALTER TABLE {shp} ALTER COLUMN geometry TYPE Geometry(LINESTRING, {new_coords}) USING ST_Transform(geometry,{new_coords});"))
 }
 
+#' Agrega indice espacial a la base
+#' @param nombre_tabla Nombre de la tabla a la cual se le agregará el índice espacial
+#' @param geometry Nombre del campo correspondiente a la geometria
+create_spatial_index = function( nombre_tabla, geometry = 'geometry', conn) {
+  dbSendQuery(conn,
+              glue("create index idx_{nombre_tabla}
+                    on {nombre_tabla}
+                    using GIST({geometry});")
+              )
+}
