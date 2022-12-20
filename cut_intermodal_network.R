@@ -47,57 +47,18 @@ source(file = here("config.R"))
 #1. Prueba de conexión con la base de datos 
 connec = test_database_conection(dsn_database,dsn_hostname,dsn_port,dsn_uid,dsn_pwd)
 
-#2.1 Leer y cargar inhibidores y desinhibidores
 
-#2.1.1 Leer archivos shp
-#Inhibidores
-lista_inhibidores = dict(RED_BUSES_NAME = st_read(RED_BUSES_PATH, options = "ENCODING=latin1"),
-                         RED_PRINCIPALES_NAME = st_read(RED_PRINCIPALES_PATH))
+#2. Cortar la red
 
-#Desinhibidores
-lista_desinhibidores = dict('proyect' = st_read(connec,CICLO_BD_NAME) %>% filter(proyect == 0),
-                            'calidad' = st_read(connec,CICLO_BD_NAME) %>% filter(proyect == 0 & o_op_ci ==0))
-
-
-#2.1.2 Importar archivos a la base PostgreSQL
-
-#Inhibidores
-for (inhibidor in lista_inhibidores$keys){
-  print(paste("Cargando archivo ", inhibidor))
-  if (import_shape_to_database(shp = lista_inhibidores[inhibidor], db = inhibidor, connec = connec) != TRUE) {
-    print(paste("No fue posible cargar ",inhibidor))
-  }
+for (setting in settings_list) {
+  cut_intermodal_network(
+    nombre_resultado = setting$nombre_resultado,
+    red = setting$red,
+    filters = setting$filters,
+    lista_inh = setting$lista_inh,
+    buffer_inh = setting$buffer_inh,
+    lista_des = setting$lista_des,
+    buffer_des = setting$buffer_des,
+    conn = connec
+  )
 }
-
-#Desinhibidores
-for (desinhibidor in lista_desinhibidores$keys) {
-  print(paste("Cargando archivo ", desinhibidor))
-  if (import_shape_to_database(shp = lista_desinhibidores[desinhibidor], db = desinhibidor, connec = connec) != TRUE) {
-    print(paste("No fue posible cargar ",desinhibidor))
-  }
-}
-
-# 3. Cortar la red
-red_total = cut_intermodal_network(nombre_resultado = 'red_total',
-                                 red = NETWORK_BD,
-                                 filters = c("proyect = 0 or proyect isnull"),
-                                 lista_inh = c(RED_PRINCIPALES_NAME),
-                                 buffer_inh = 10,
-                                 lista_des = c("proyect"),
-                                 buffer_des = 25,
-                                 conn = connec)
-
-create_and_clean_topology(shp = 'red_total',
-                          topo_name = 'red_total_topo',
-                          srid = srid,
-                          connec = connec,
-                          geometry = 'geometry')
-
-red_calidad = cut_intermodal_network(nombre_resultado = 'red_calidad',
-                                 red = NETWORK_BD,
-                                 filters = c("proyect = 0 or proyect isnull","o_op_ci = 0 or o_op_ci isnull")
-                                 lista_inh = c(RED_PRINCIPALES_NAME),
-                                 buffer_inh = 10,
-                                 lista_des = c('CALIDAD'),
-                                 buffer_des = 25,
-                                 conn = connec)
