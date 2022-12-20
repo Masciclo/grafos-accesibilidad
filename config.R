@@ -39,15 +39,15 @@ settings_list = list(
   setting_1_base = list(
     nombre_resultado = 'red_total',
     red = NETWORK_BD_NAME,
-    filters = c("proyect = 0 or proyect isnull"),
-    lista_inh = RED_PRINCIPALES_NAME,
+    filters = c("proyect = 0 or proyect isnull "),
+    lista_inh = c(RED_PRINCIPALES_NAME,RED_BUSES_NAME),
     buffer_inh = 10,
     lista_des = "proyect",
     buffer_des = 25,
     conn = connec
   ),
   setting_2_base = list(
-    nombre_resultado = 'red_totalv2',
+    nombre_resultado = 'red_total_INH1',
     red = NETWORK_BD_NAME,
     filters = c("proyect = 0"),
     lista_inh = RED_PRINCIPALES_NAME,
@@ -55,6 +55,9 @@ settings_list = list(
     lista_des = "proyect",
     buffer_des = 25,
     conn = connec
+  ),
+  setting_3_base = list(
+    
   )
 )
 
