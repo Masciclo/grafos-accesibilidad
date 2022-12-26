@@ -2,9 +2,8 @@
 # E-mail: ignacio.hernandez.c@usach.cl
 # Fecha: septiembre, 2022
 # 
-# Descripcion: Este archivo contiene el flujo de ejecucion para implementar el
-# algoritmo de analisis de indicadores y metricas de red sobre redes de
-# ciclovias.
+# Descripcion: Este archivo contiene la ejecución de la unión de la red ciclo
+# con la red OSM.
 #
 # Indice -----------------------------------------------------------------------
 # 0. Importacion de librerias y funciones.
@@ -16,13 +15,10 @@
 # 3. Importar capa a PostGIS
 
 # 0. Importacion de librerias y funciones -------------------------------------
-packages <- c("here","dplyr","sf","igraph","lwgeom","data.table")
+packages <- c("here","dplyr","sf","igraph","lwgeom","data.table","RPostgreSQL")
 install.packages(setdiff(packages,rownames(installed.packages())))
 library(here)        # Gestionar rutas relativas
 library(dplyr)       # Trabajar con dataframes
-library(sf)          # Trabajar con simple features
-library(igraph)      # Construir grafos
-library(lwgeom)      # Para utilizar la funcion st_split()
 library(DBI)
 library(RPostgreSQL)
 library(sf)
@@ -43,12 +39,14 @@ source(file = here("config.R"))
 #Algoritmo y ejecucion --------------------------------------------------------
 
 #1. Prueba de conexión con la base de datos 
-connec = test_database_conection(dsn_database,dsn_hostname,dsn_port,dsn_uid,dsn_pwd)
+connec = test_database_connection(dsn_database,dsn_hostname,dsn_port,dsn_uid,dsn_pwd)
 
 #2. Union de ambas bases
 full_net=sf::st_as_sf(data.table::rbindlist(list(st_read(dsn,CICLO_BD_NAME),st_read(dsn,OSM_BD_NAME)),fill = TRUE))
+full_net$NET_ID = c(1:nrow(full_net))
+print(paste("Faltan las columnas: ",compulsory_fields[!(compulsory_fields %in% colnames(full_net))]))
 
 #3. Importar capa a PostGIS
-if (import_shape_to_database(shp = full_net, db = NETWORK_SHP, connec = connec) != TRUE) {
+if (import_shape_to_database(shp = full_net, db = NETWORK_BD_NAME, connec = connec) != TRUE) {
   print("No fue posible cargar la red completa")
 }
