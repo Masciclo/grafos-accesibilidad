@@ -1,10 +1,18 @@
-source(file = here('src/graph_helpers.R'))
-source(file = here("src/sql_helper.R"))
-source(file = here('config.R'))
+##Forzar instalación de librería here
+packages <- c("here")
+install.packages(setdiff(packages,rownames(installed.packages())))
+library(here)
 
-connec = test_database_conection(dsn_database,dsn_hostname,dsn_port,dsn_uid,dsn_pwd)
+#Cargar funciones asociadas a SQL
+source(file = here("src/sql_helper.r"))
+#Cargar configuración
+source(file = here('config.r'))
 
-source(file = here('create_intermodal_network.R'))
-source(file = here('cut_intermodal_network.R'))
+#Crear la red intermodal
+source(file = here('create_intermodal_network.r'))
+#Cortar la red intermodal
+source(file = here('cut_intermodal_network.r'))
+#Calculo de componentes
 source(file = here('calculate_component.r'))
+#Resultados en H3 
 source(file = here('to_h3.r'))
