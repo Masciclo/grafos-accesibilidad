@@ -101,7 +101,7 @@ create_buffer = function( lista_shps, metros = 0 , connec ) {
       buffer_sql =  paste(
         lapply(
           lista_shps,function(x) 
-            glue("select st_union(st_buffer({x}.geometry,{metros})) as geometry FROM public.{x}")),
+            glue("select st_union(st_buffer(\"{x}\".geometry,{metros})) as geometry FROM public.\"{x}\" ")),
         collapse = ' union all ')
       buffer_query = dbSendQuery(connec,
                                glue("CREATE TABLE {buffer_name} AS {buffer_sql};"))
