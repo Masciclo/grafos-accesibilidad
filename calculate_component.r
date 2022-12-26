@@ -67,9 +67,9 @@ library(lwgeom)      # Para utilizar la funcion st_split()
 #setwd('~/home/grafos-accesibilidad/')
 # -----------------------------------------------------------------------------
 
-source(file = here('src/graph_helpers.R'))
-source(file = here("src/sql_helper.R"))
-source(file = here('config.R'))
+source(file = here('src/graph_helpers.r'))
+source(file = here("src/sql_helper.r"))
+source(file = here('config.r'))
 
 # Algoritmo y ejecucion --------------------------------------------------------
 # 1. Lectura de archivos de entrada (formato *.shp o *.geojson). ---------------
