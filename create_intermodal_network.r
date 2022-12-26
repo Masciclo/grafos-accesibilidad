@@ -33,7 +33,6 @@ library(data.table)
 setwd('~/grafos-accesibilidad/')
 # -----------------------------------------------------------------------------
 
-source(file = here("src/graph_helpers.r"))
 source(file = here("src/sql_helper.r"))
 source(file = here("config.r"))
 #Algoritmo y ejecucion --------------------------------------------------------
