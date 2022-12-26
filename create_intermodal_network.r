@@ -33,9 +33,9 @@ library(data.table)
 setwd('~/grafos-accesibilidad/')
 # -----------------------------------------------------------------------------
 
-source(file = here("src/graph_helpers.R"))
-source(file = here("src/sql_helper.R"))
-source(file = here("config.R"))
+source(file = here("src/graph_helpers.r"))
+source(file = here("src/sql_helper.r"))
+source(file = here("config.r"))
 #Algoritmo y ejecucion --------------------------------------------------------
 
 #1. Prueba de conexión con la base de datos 
