@@ -139,6 +139,25 @@
 # }
 
 ##SEPARAR UNIÓN BASAL DE HEXAGONOS CON RESULTADOS POR ESCENARIO##
+
+#' Verificar nombres de columnas de resultado en los hexagonos
+#' @param h Nombre del shape de hexagonos
+#' @param nombre_escenario Nombre del escenario que se desea verificar
+#' @param connec Variable de conexión
+check_columns_existence = function(h,nombre_escenario,connec) {
+  dbGetQuery(connec,
+             glue(
+               "SELECT EXISTS (SELECT 1 
+                  FROM information_schema.columns 
+                  WHERE table_schema='hexs' AND table_name='{h}' AND column_name='{nombre_escenario}_ci_total')"
+             ))
+}
+
+#' Preparar hexágonos para traspaso de información agregando columnas de resultado
+#' @param h_schema Nombre del esquema de hexagonos
+#' @param h Nombre del shape de hexágonos
+#' @param nombre_resultado Nombre del resultado que se desea agregar a los hexagonos
+#' @param connec Variable de conexión 
 prepare_hex = function(h_schema,h,nombre_resultado,connec) {
   dbGetQuery(conn = connec,
              glue("ALTER TABLE \"{h_schema}\".\"{h}\"
@@ -157,31 +176,32 @@ prepare_hex = function(h_schema,h,nombre_resultado,connec) {
                   )
              )
 }
-prepare_hex("hexs","Hexagonos_H3_NSE","prueba1",connec)
 
-
+#' Agregar información de resultados a los hexagonos
 #' @param h_schema Nombre de los hexágonos 
 #' @param h Nombre de shape de hexágonos
 #' @param x Nombre de shape de red
 #' @param x_schema Nombre del schema de la red
-#' @param conn Variable de conexión
+#' @param connec Variable de conexión
 to_h3 = function(h_schema,h,x_schema,x,connec) {
-  prepare_hex(h_schema,h,x,connec)
+  if (!(check_columns_existence(h,x,connec))) {
+    prepare_hex(h_schema,h,x,connec)
+  }
   dbGetQuery(connec,
              glue(" 
              UPDATE \"{h_schema}\".\"{h}\"
              set {x}_id_comp = id_comp,
-             set {x}_ci_total = ci_total,
-             set {x}_Fantom = Fantom,
-             set {x}_project_1 = project_1,
-             set {x}_project_2 = project_2,
-             set {x}_ci_B = ci_B,
-             set {x}_ci_M = ci_M,
-             set {x}_cr_B = cr_B,
-             set {x}_cr_M = cr_M,
-             set {x}_ci_N_B = ci_N_B,
-             set {x}_ci_N_M = ci_N_M,
-             set {x}_metros_OSM = metros_OSM
+             {x}_ci_total = ci_total,
+             {x}_Fantom = Fantom,
+             {x}_project_1 = project_1,
+             {x}_project_2 = project_2,
+             {x}_ci_B = ci_B,
+             {x}_ci_M = ci_M,
+             {x}_cr_B = cr_B,
+             {x}_cr_M = cr_M,
+             {x}_ci_N_B = ci_N_B,
+             {x}_ci_N_M = ci_N_M,
+             {x}_metros_OSM = metros_OSM
              from (
              SELECT 
                 pc.*,
@@ -228,12 +248,11 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 from (
                 	select 
                 		pc.id as id_hex,
-                		tc.ciclo_calle as ciclo_calle,
+                		tc.id_2 as ci_total,
                 		st_intersection(tc.geometry,pc.geom) as geometry
                 	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                	where st_intersects(tc.geometry,pc.geom) = TRUE
+                	where st_intersects(tc.geometry,pc.geom) = TRUE and id_2 is not null
                 ) as i_largo_ciclo
-                where ciclo_calle = 1
                 group by id_hex
               ) as len_ci_total
               on pc.id = len_ci_total.id_hex
@@ -260,12 +279,12 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 from (
                 	select 
                 		pc.id as id_hex,
-                		tc.\"proyect\" as proyect,
+                		tc.\"proye\" as proye,
                 		st_intersection(tc.geometry,pc.geom) as geometry
                 	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                 	where st_intersects(tc.geometry,pc.geom) = TRUE
                 ) as i_p_1
-                where proyect = 1
+                where proye = 1
                 group by id_hex  
               ) as i_project_1
               on pc.id = i_project_1.id_hex
@@ -276,12 +295,12 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 from (
                 	select 
                 		pc.id as id_hex,
-                		tc.\"proyect\" as proyect,
+                		tc.\"proye\" as proye,
                 		st_intersection(tc.geometry,pc.geom) as geometry
                 	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                 	where st_intersects(tc.geometry,pc.geom) = TRUE
                 ) as i_p_2
-                where proyect = 2
+                where proye = 2
                 group by id_hex
               ) as i_project_2
               on pc.id = i_project_2.id_hex
@@ -292,12 +311,12 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 from (
                   select 
                    pc.id as id_hex,
-                   tc.\"o_op_ci\" as o_op_ci,
+                   tc.\"op_ci\" as op_ci,
                    st_intersection(tc.geometry,pc.geom) as geometry
                   from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                   where st_intersects(tc.geometry,pc.geom)= TRUE
                 ) as i_op_0
-                where o_op_ci = 0
+                where op_ci = 0
                 group by id_hex
               ) as i_op_ci_0
               on pc.id = i_op_ci_0.id_hex
@@ -308,12 +327,12 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 from (
                   select 
                    pc.id as id_hex,
-                   tc.\"o_op_ci\" as o_op_ci,
+                   tc.\"op_ci\" as op_ci,
                    st_intersection(tc.geometry,pc.geom) as geometry
                   from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                   where st_intersects(tc.geometry,pc.geom)= TRUE
                 ) as i_op_1
-                where o_op_ci = 1
+                where op_ci = 1
                 group by id_hex
               ) as i_op_ci_1
               on pc.id = i_op_ci_1.id_hex
@@ -324,12 +343,12 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 from (
                   select 
                    pc.id as id_hex,
-                   tc.\"o_op_cr\" as o_op_cr,
+                   tc.\"op_cr\" as op_cr,
                    st_intersection(tc.geometry,pc.geom) as geometry
                   from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                   where st_intersects(tc.geometry,pc.geom)= TRUE
                 ) as i_cr_0
-                where o_op_cr = 0
+                where op_cr = 0
                 group by id_hex
               ) as i_op_cr_0
               on pc.id = i_op_cr_0.id_hex
@@ -340,12 +359,12 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 from (
                   select 
                    pc.id as id_hex,
-                   tc.\"o_op_cr\" as o_op_cr,
+                   tc.\"op_cr\" as op_cr,
                    st_intersection(tc.geometry,pc.geom) as geometry
                   from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                   where st_intersects(tc.geometry,pc.geom)= TRUE
                 ) as i_cr_1
-                where o_op_cr = 1
+                where op_cr = 1
                 group by id_hex
               ) as i_op_cr_1
               on pc.id = i_op_cr_1.id_hex
@@ -356,12 +375,11 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 from (
                 	select 
                 		pc.id as id_hex,
-                		tc.ciclo_calle as ciclo_calle,
+                		tc.id_2 as id_2,
                 		st_intersection(tc.geometry,pc.geom) as geometry
                 	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                	where st_intersects(tc.geometry,pc.geom) = TRUE
+                	where st_intersects(tc.geometry,pc.geom) = TRUE and id_2 is null
                 ) as i_largo_osm
-                where ciclo_calle = 0
                 group by id_hex
               ) as len_osm_total
               on pc.id = len_osm_total.id_hex
@@ -377,20 +395,20 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
 				            from( 
 				              SELECT
                         id_hex,
-                        CICLOVIA_N,
+                        n_ciclo,
                         sum(st_length(geometry)) as largo
                       from (
                     	  select 
                     	  	pc.id as id_hex,
-                    	  	tc.\"ciclovia_n\" as CICLOVIA_N,
-                    	  	tc.\"o_op_ci\" as o_op_ci,
+                    	  	tc.\"n_ciclo\" as n_ciclo,
+                    	  	tc.\"op_ci\" as op_ci,
                           st_intersection(tc.geometry,pc.geom) as geometry
                         from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                         where st_intersects(tc.geometry,pc.geom) = TRUE
-                        group by id_hex,CICLOVIA_N,o_op_ci,tc.geometry,pc.geom
+                        group by id_hex,n_ciclo,op_ci,tc.geometry,pc.geom
                       ) as inters
-				            where CICLOVIA_N is not null and o_op_ci = 0
-				            group by id_hex,CICLOVIA_N
+				            where n_ciclo is not null and op_ci = 0
+				            group by id_hex,n_ciclo
 				            ) as ciclo_n
 				            ) as ciclovian
 				        where rnk = 1) as len_ci_n_b
@@ -407,27 +425,50 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
 				            from( 
 				              SELECT
                         id_hex,
-                        CICLOVIA_N,
+                        n_ciclo,
                         sum(st_length(geometry)) as largo
                       from (
                     	  select 
                     	  	pc.id as id_hex,
-                    	  	tc.\"ciclovia_n\" as CICLOVIA_N,
-                  	  	  tc.\"o_op_ci\" as o_op_ci,
+                    	  	tc.\"n_ciclo\" as n_ciclo,
+                  	  	  tc.\"op_ci\" as op_ci,
                           st_intersection(tc.geometry,pc.geom) as geometry
                         from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                         where st_intersects(tc.geometry,pc.geom) = TRUE
-                        group by id_hex,CICLOVIA_N,o_op_ci,tc.geometry,pc.geom
+                        group by id_hex,n_ciclo,op_ci,tc.geometry,pc.geom
                       ) as inters
-				            where CICLOVIA_N is not null and o_op_ci = 1
-				            group by id_hex,CICLOVIA_N
+				            where n_ciclo is not null and op_ci = 1
+				            group by id_hex,n_ciclo
 				            ) as ciclo_n
 				            ) as ciclovian
 				        where rnk = 1) as len_ci_n_m
                 on pc.id = len_ci_n_m.id_hex
                   ) result
                   where \"{h_schema}\".\"{h}\".id = result.id"
-              
              )
   )
+  
   }
+
+#' Borrar columnas de escenario específico en los hexágonos
+#' @param h Nombre del shp de hexagonos
+#' @param nombre_escenario Nombre del escenario que se desea borrar
+#' @param connec Variable de conexión
+delete_h3_results = function(h,nombre_escenario,connec) {
+  dbGetQuery(conn = connec,
+             glue("ALTER TABLE \"{h_schema}\".\"{h}\"
+             drop column {nombre_resultado}_id_comp,
+             drop column {nombre_resultado}_ci_total,
+             drop column {nombre_resultado}_Fantom,
+             drop column {nombre_resultado}_project_1,
+             drop column {nombre_resultado}_project_2,
+             drop column {nombre_resultado}_ci_B,
+             drop column {nombre_resultado}_ci_M,
+             drop column {nombre_resultado}_cr_B,
+             drop column {nombre_resultado}_cr_M,
+             drop column {nombre_resultado}_ci_N_B,
+             drop column {nombre_resultado}_ci_N_M,
+             drop column {nombre_resultado}_metros_OSM"
+             )
+  )
+} 
