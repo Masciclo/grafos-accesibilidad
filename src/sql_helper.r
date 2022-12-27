@@ -303,3 +303,34 @@ create_spatial_index = function( nombre_tabla, geometry = 'geometry', connec) {
                     using GIST({geometry});")
               )
 }
+
+#' Cambia el nombre del campo de la geometría
+#' @param nombre_tabla Nombre de la tabla a la cual se le quiere cambiar la geometría
+#' @param schema_name Nombre del esquema en el cual se encuentra la tabla
+geom_to_geometry = function( schema_name,nombre_tabla,connec ) {
+  dbSendQuery(connec,
+              glue("ALTER TABLE \"{schema_name}\".\"{nombre_tabla}\"
+                    RENAME COLUMN geom TO geometry;"))
+}
+
+#' Cambia el nombre del campo de la geometría
+#' @param nombre_tabla Nombre de la tabla a la cual se le quiere cambiar la geometría
+#' @param schema_name Nombre del esquema en el cual se encuentra la tabla
+#' @param old_name Nombre antiguo del campo
+#' @param new_name Nombre nuevo del campo
+change_column_names = function(schema_name,nombre_tabla,old_name,new_name){
+  dbSendQuery(connec,
+              glue("ALTER TABLE \"{schema_name}\".\"{nombre_tabla}\"
+                    RENAME COLUMN {old_name} TO {new_name};"))
+}
+
+#' Borrar topología
+#' @param nombre_red Nombre de la tabla al a cual se le borrará la topología
+#' @param connec Conexión a base de datos
+remove_topology = function(nombre_red,connec) {
+  topo = paste0(nombre_red,'_topo')
+  dbSendQuery(connec,
+              glue(
+                "SELECT topology.DropTopology({topo})"
+              ))
+}
