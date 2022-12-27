@@ -104,9 +104,10 @@ create_buffer = function( lista_shps, metros = 0 , connec ) {
             glue("select st_union(st_buffer(\"{x}\".geometry,{metros})) as geometry FROM public.\"{x}\" ")),
         collapse = ' union all ')
       buffer_query = dbSendQuery(connec,
-                               glue("CREATE TABLE {buffer_name} AS {buffer_sql};"))
+                               glue("CREATE SCHEMA IF NOT EXISTS buffers;
+                                    CREATE TABLE buffers.{buffer_name} AS {buffer_sql};"))
       create_spatial_index = dbSendQuery(connec,
-                                       glue("CREATE INDEX {index_name} ON {buffer_name} USING GIST (geometry);"))
+                                       glue("CREATE INDEX {index_name} ON buffers.{buffer_name} USING GIST (geometry);"))
       return(buffer_name)
     }
     else{
@@ -123,13 +124,13 @@ create_buffer = function( lista_shps, metros = 0 , connec ) {
 #' @param conn Variable de conexion
 buffer_difference = function(nombre_resultado,buffer_inhibidores,buffer_desinhibidores,connec) {
   
-    dbSendQuery(connec,glue("CREATE TABLE IF NOT EXISTS bf_{nombre_resultado} as
+    dbSendQuery(connec,glue("CREATE TABLE IF NOT EXISTS buffers.bf_{nombre_resultado} as
                                   select 
                                   st_difference(bi.geometry,bd.geometry) as geometry
                                   from {buffer_inhibidores} bi, {buffer_desinhibidores} bd;
                                   
                                   create index IF NOT EXISTS idx_bf_{nombre_resultado}
-                                  on bf_{nombre_resultado}
+                                  on buffers.bf_{nombre_resultado}
                                   using GIST(geometry);")
     )
   return("bf_{nombre_resultado}")
