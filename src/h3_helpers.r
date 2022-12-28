@@ -457,18 +457,18 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
 delete_h3_results = function(h,nombre_escenario,connec) {
   dbGetQuery(conn = connec,
              glue("ALTER TABLE \"{h_schema}\".\"{h}\"
-             drop column {nombre_resultado}_id_comp,
-             drop column {nombre_resultado}_ci_total,
-             drop column {nombre_resultado}_Fantom,
-             drop column {nombre_resultado}_project_1,
-             drop column {nombre_resultado}_project_2,
-             drop column {nombre_resultado}_ci_B,
-             drop column {nombre_resultado}_ci_M,
-             drop column {nombre_resultado}_cr_B,
-             drop column {nombre_resultado}_cr_M,
-             drop column {nombre_resultado}_ci_N_B,
-             drop column {nombre_resultado}_ci_N_M,
-             drop column {nombre_resultado}_metros_OSM"
+             drop column {nombre_escenario}_id_comp,
+             drop column {nombre_escenario}_ci_total,
+             drop column {nombre_escenario}_Fantom,
+             drop column {nombre_escenario}_project_1,
+             drop column {nombre_escenario}_project_2,
+             drop column {nombre_escenario}_ci_B,
+             drop column {nombre_escenario}_ci_M,
+             drop column {nombre_escenario}_cr_B,
+             drop column {nombre_escenario}_cr_M,
+             drop column {nombre_escenario}_ci_N_B,
+             drop column {nombre_escenario}_ci_N_M,
+             drop column {nombre_escenario}_metros_OSM"
              )
   )
 } 
