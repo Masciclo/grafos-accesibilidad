@@ -90,7 +90,7 @@ create_buffer = function( lista_shps, metros = 0 , connec ) {
   if (table_existence) {
     print(paste0("Cargando buffer ",buffer_name))
     create_spatial_index = dbSendQuery(connec,
-                                       glue("CREATE INDEX IF NOT EXISTS {index_name} ON {buffer_name} USING GIST (geometry);"))
+                                       glue("CREATE INDEX IF NOT EXISTS {index_name} ON buffers.{buffer_name} USING GIST (geometry);"))
     estado = T
     return(buffer_name)
   }
@@ -127,7 +127,7 @@ buffer_difference = function(nombre_resultado,buffer_inhibidores,buffer_desinhib
     dbSendQuery(connec,glue("CREATE TABLE IF NOT EXISTS buffers.bf_{nombre_resultado} as
                                   select 
                                   st_difference(bi.geometry,bd.geometry) as geometry
-                                  from {buffer_inhibidores} bi, {buffer_desinhibidores} bd;
+                                  from buffers.{buffer_inhibidores} bi, buffers.{buffer_desinhibidores} bd;
                                   
                                   create index IF NOT EXISTS idx_bf_{nombre_resultado}
                                   on buffers.bf_{nombre_resultado}
@@ -204,7 +204,7 @@ cut_intermodal_network = function(nombre_resultado, red, filters = c(), lista_in
  	                   rcc.\"op_cr\",
  	                   rcc.\"type\",
  	                   st_difference(rcc.geometry, bf.geometry) as geometry
-                    from {red} rcc, bf_{nombre_resultado} bf;
+                    from {red} rcc, buffers.bf_{nombre_resultado} bf;
                     
                     create index idx_{nombre_resultado}
                     on {nombre_resultado}
@@ -254,7 +254,7 @@ cut_intermodal_network = function(nombre_resultado, red, filters = c(), lista_in
  	                   rcc.\"op_cr\",
  	                   rcc.\"type\",
                      st_difference(rcc.geometry, bf.geometry) as geometry
-                    from {red} rcc, bf_{nombre_resultado} bf
+                    from {red} rcc, buffers.bf_{nombre_resultado} bf
                     where {filter_stament};
                     
                     create index idx_{nombre_resultado}
