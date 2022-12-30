@@ -456,7 +456,7 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
 #' @param connec Variable de conexión
 delete_h3_results = function(h,nombre_escenario,connec) {
   dbGetQuery(conn = connec,
-             glue("ALTER TABLE \"{h_schema}\".\"{h}\"
+             glue("ALTER TABLE hexs.\"{h}\"
              drop column {nombre_escenario}_id_comp,
              drop column {nombre_escenario}_ci_total,
              drop column {nombre_escenario}_Fantom,
