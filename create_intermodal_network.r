@@ -42,7 +42,7 @@ connec = test_database_connection(dsn_database,dsn_hostname,dsn_port,dsn_uid,dsn
 
 #2. Union de ambas bases
 full_net=sf::st_as_sf(data.table::rbindlist(list(st_read(dsn,CICLO_BD_NAME),st_read(dsn,OSM_BD_NAME)),fill = TRUE))
-full_net$ciclo_calle = ifelse(is.null(full_n$id_2),FALSE,TRUE)
+full_net$ciclo_calle = ifelse(is.na(mapocho$id_2),FALSE,TRUE)
 full_net$NET_ID = c(1:nrow(full_net))
 print(paste("Faltan las columnas: ",compulsory_fields[!(compulsory_fields %in% colnames(full_net))]))
 
