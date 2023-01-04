@@ -426,7 +426,7 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
 				              SELECT
                         id_hex,
                         n_ciclo,
-                        sum(st_length(tc.geometry)) as largo
+                        sum(st_length(inters.geometry)) as largo
                       from (
                     	  select 
                     	  	pc.id as id_hex,
