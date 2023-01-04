@@ -16,3 +16,11 @@ source(file = here('cut_intermodal_network.r'))
 source(file = here('calculate_component.r'))
 #Resultados en H3 
 source(file = here('to_h3.r'))
+
+#Eliminar reulstados en H3
+for (setting in settings_list) {
+  delete_h3_results(h = HEX_NAME,
+                    nombre_escenario = setting$nombre_resultado,
+                    connec = connec)
+}
+
