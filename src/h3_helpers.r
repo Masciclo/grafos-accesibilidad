@@ -233,7 +233,7 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 	  	pc.id as id_hex,
                 	  	tc.id_comp as id_comp,
                 	  	st_intersection(tc.geometry,pc.geometry) as geometry,
-                	  	sum(st_length(geometry)) as largo	
+                	  	sum(st_length(tc.geometry)) as largo	
                 	  from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
                 	  where st_intersects(tc.geometry,pc.geometry) = TRUE
                 	  group by id_hex,id_comp,tc.geometry,pc.geometry
@@ -396,7 +396,7 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
 				              SELECT
                         id_hex,
                         n_ciclo,
-                        sum(st_length(geometry)) as largo
+                        sum(st_length(tc.geometry)) as largo
                       from (
                     	  select 
                     	  	pc.id as id_hex,
@@ -426,7 +426,7 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
 				              SELECT
                         id_hex,
                         n_ciclo,
-                        sum(st_length(geometry)) as largo
+                        sum(st_length(tc.geometry)) as largo
                       from (
                     	  select 
                     	  	pc.id as id_hex,
