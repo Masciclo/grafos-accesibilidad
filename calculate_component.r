@@ -132,6 +132,7 @@ total_network_gdf = st_read(dsn = dsn,
  	                   rcc.\"op_dist\",
  	                   rcc.\"op_cr\",
  	                   rcc.\"type\",
+ 	                   rcc.\"ciclo_calle\"
   e.geom as geometry from
 {red} rcc,
 {topologia}.edge e,
@@ -186,7 +187,7 @@ bicycle_tibble = merge(bicycle_tibble,componentes_ciclables,by.x='id_comp',by.y=
 
 return(bicycle_tibble)
 }
-
+###SUBIR RESULTADOS A ESQUEMA ESPECÍFICO
 for (setting in settings_list) {
   result = components(setting$nombre_resultado)
   sf::st_write(result,layer = setting$nombre_resultado, dsn = connec)
