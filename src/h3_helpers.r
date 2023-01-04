@@ -232,11 +232,11 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 	  select 
                 	  	pc.id as id_hex,
                 	  	tc.id_comp as id_comp,
-                	  	st_intersection(tc.geometry,pc.geom) as geometry,
+                	  	st_intersection(tc.geometry,pc.geometry) as geometry,
                 	  	sum(st_length(geometry)) as largo	
                 	  from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                	  where st_intersects(tc.geometry,pc.geom) = TRUE
-                	  group by id_hex,id_comp,tc.geometry,pc.geom
+                	  where st_intersects(tc.geometry,pc.geometry) = TRUE
+                	  group by id_hex,id_comp,tc.geometry,pc.geometry
                   ) as inter
                 ) as last
                 where rnk = 1) as int
@@ -249,9 +249,9 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 	select 
                 		pc.id as id_hex,
                 		tc.id_2 as ci_total,
-                		st_intersection(tc.geometry,pc.geom) as geometry
+                		st_intersection(tc.geometry,pc.geometry) as geometry
                 	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                	where st_intersects(tc.geometry,pc.geom) = TRUE and id_2 is not null
+                	where st_intersects(tc.geometry,pc.geometry) = TRUE and id_2 is not null
                 ) as i_largo_ciclo
                 group by id_hex
               ) as len_ci_total
@@ -264,9 +264,9 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 	select 
                 		pc.id as id_hex,
                 		tc.\"phanto\" as phanto,
-                		st_intersection(tc.geometry,pc.geom) as geometry
+                		st_intersection(tc.geometry,pc.geometry) as geometry
                 	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                	where st_intersects(tc.geometry,pc.geom) = TRUE
+                	where st_intersects(tc.geometry,pc.geometry) = TRUE
                 ) as i_p
                 where phanto = 1
                 group by id_hex
@@ -280,9 +280,9 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 	select 
                 		pc.id as id_hex,
                 		tc.\"proye\" as proye,
-                		st_intersection(tc.geometry,pc.geom) as geometry
+                		st_intersection(tc.geometry,pc.geometry) as geometry
                 	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                	where st_intersects(tc.geometry,pc.geom) = TRUE
+                	where st_intersects(tc.geometry,pc.geometry) = TRUE
                 ) as i_p_1
                 where proye = 1
                 group by id_hex  
@@ -296,9 +296,9 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 	select 
                 		pc.id as id_hex,
                 		tc.\"proye\" as proye,
-                		st_intersection(tc.geometry,pc.geom) as geometry
+                		st_intersection(tc.geometry,pc.geometry) as geometry
                 	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                	where st_intersects(tc.geometry,pc.geom) = TRUE
+                	where st_intersects(tc.geometry,pc.geometry) = TRUE
                 ) as i_p_2
                 where proye = 2
                 group by id_hex
@@ -312,9 +312,9 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                   select 
                    pc.id as id_hex,
                    tc.\"op_ci\" as op_ci,
-                   st_intersection(tc.geometry,pc.geom) as geometry
+                   st_intersection(tc.geometry,pc.geometry) as geometry
                   from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                  where st_intersects(tc.geometry,pc.geom)= TRUE
+                  where st_intersects(tc.geometry,pc.geometry)= TRUE
                 ) as i_op_0
                 where op_ci = 0
                 group by id_hex
@@ -328,9 +328,9 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                   select 
                    pc.id as id_hex,
                    tc.\"op_ci\" as op_ci,
-                   st_intersection(tc.geometry,pc.geom) as geometry
+                   st_intersection(tc.geometry,pc.geometry) as geometry
                   from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                  where st_intersects(tc.geometry,pc.geom)= TRUE
+                  where st_intersects(tc.geometry,pc.geometry)= TRUE
                 ) as i_op_1
                 where op_ci = 1
                 group by id_hex
@@ -344,9 +344,9 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                   select 
                    pc.id as id_hex,
                    tc.\"op_cr\" as op_cr,
-                   st_intersection(tc.geometry,pc.geom) as geometry
+                   st_intersection(tc.geometry,pc.geometry) as geometry
                   from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                  where st_intersects(tc.geometry,pc.geom)= TRUE
+                  where st_intersects(tc.geometry,pc.geometry)= TRUE
                 ) as i_cr_0
                 where op_cr = 0
                 group by id_hex
@@ -360,9 +360,9 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                   select 
                    pc.id as id_hex,
                    tc.\"op_cr\" as op_cr,
-                   st_intersection(tc.geometry,pc.geom) as geometry
+                   st_intersection(tc.geometry,pc.geometry) as geometry
                   from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                  where st_intersects(tc.geometry,pc.geom)= TRUE
+                  where st_intersects(tc.geometry,pc.geometry)= TRUE
                 ) as i_cr_1
                 where op_cr = 1
                 group by id_hex
@@ -376,9 +376,9 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 	select 
                 		pc.id as id_hex,
                 		tc.id_2 as id_2,
-                		st_intersection(tc.geometry,pc.geom) as geometry
+                		st_intersection(tc.geometry,pc.geometry) as geometry
                 	from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                	where st_intersects(tc.geometry,pc.geom) = TRUE and id_2 is null
+                	where st_intersects(tc.geometry,pc.geometry) = TRUE and id_2 is null
                 ) as i_largo_osm
                 group by id_hex
               ) as len_osm_total
@@ -402,10 +402,10 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                     	  	pc.id as id_hex,
                     	  	tc.\"n_ciclo\" as n_ciclo,
                     	  	tc.\"op_ci\" as op_ci,
-                          st_intersection(tc.geometry,pc.geom) as geometry
+                          st_intersection(tc.geometry,pc.geometry) as geometry
                         from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                        where st_intersects(tc.geometry,pc.geom) = TRUE
-                        group by id_hex,n_ciclo,op_ci,tc.geometry,pc.geom
+                        where st_intersects(tc.geometry,pc.geometry) = TRUE
+                        group by id_hex,n_ciclo,op_ci,tc.geometry,pc.geometry
                       ) as inters
 				            where n_ciclo is not null and op_ci = 0
 				            group by id_hex,n_ciclo
@@ -432,10 +432,10 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                     	  	pc.id as id_hex,
                     	  	tc.\"n_ciclo\" as n_ciclo,
                   	  	  tc.\"op_ci\" as op_ci,
-                          st_intersection(tc.geometry,pc.geom) as geometry
+                          st_intersection(tc.geometry,pc.geometry) as geometry
                         from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                        where st_intersects(tc.geometry,pc.geom) = TRUE
-                        group by id_hex,n_ciclo,op_ci,tc.geometry,pc.geom
+                        where st_intersects(tc.geometry,pc.geometry) = TRUE
+                        group by id_hex,n_ciclo,op_ci,tc.geometry,pc.geometry
                       ) as inters
 				            where n_ciclo is not null and op_ci = 1
 				            group by id_hex,n_ciclo
