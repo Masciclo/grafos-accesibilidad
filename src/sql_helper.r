@@ -203,6 +203,7 @@ cut_intermodal_network = function(nombre_resultado, red, filters = c(), lista_in
  	                   rcc.\"op_dist\",
  	                   rcc.\"op_cr\",
  	                   rcc.\"type\",
+ 	                   rcc.\"ciclo_calle\",
  	                   st_difference(rcc.geometry, bf.geometry) as geometry
                     from {red} rcc, buffers.bf_{nombre_resultado} bf;
                     
@@ -253,6 +254,7 @@ cut_intermodal_network = function(nombre_resultado, red, filters = c(), lista_in
  	                   rcc.\"op_dist\",
  	                   rcc.\"op_cr\",
  	                   rcc.\"type\",
+ 	                   rcc.\"ciclo_calle\",
                      st_difference(rcc.geometry, bf.geometry) as geometry
                     from {red} rcc, buffers.bf_{nombre_resultado} bf
                     where {filter_stament};
