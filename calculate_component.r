@@ -132,7 +132,7 @@ total_network_gdf = st_read(dsn = dsn,
  	                   rcc.\"op_dist\",
  	                   rcc.\"op_cr\",
  	                   rcc.\"type\",
- 	                   rcc.\"ciclo_calle\"
+ 	                   rcc.\"ciclo_calle\",
   e.geom as geometry from
 {red} rcc,
 {topologia}.edge e,
