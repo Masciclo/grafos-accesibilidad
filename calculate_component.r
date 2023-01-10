@@ -133,6 +133,7 @@ total_network_gdf = st_read(dsn = dsn,
  	                   rcc.\"op_cr\",
  	                   rcc.\"type\",
  	                   rcc.\"ciclo_calle\",
+ 	                   rcc.\"topo_geom\",
   e.geom as geometry from
 {red} rcc,
 {topologia}.edge e,
@@ -178,7 +179,7 @@ bicycle_igraph = total_igraph_raw %>%
 bicycle_tibble = bicycle_igraph %>% as_tibble
 
 componentes_ciclables = as.data.frame(unlist(lapply( unique(bicycle_tibble$id_comp), function(x) {
-  any(bicycle_tibble[bicycle_tibble$id_comp == x,]$ciclo_calle)
+  any(bicycle_tibble[bicycle_tibble$id_comp == x,]$ciclo_calle & (bicycle_tibble[bicycle_tibble$id_comp == x,]$ci_o_cr == 1))
 })))
 
 componentes_ciclables$id = c(1:nrow(componentes_ciclables))
