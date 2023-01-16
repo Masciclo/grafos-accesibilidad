@@ -191,6 +191,7 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
              glue(" 
              UPDATE \"{h_schema}\".\"{h}\"
              set {x}_id_comp = id_comp,
+             {x}_comp_ci = comp_ci,
              {x}_ci_total = ci_total,
              {x}_Fantom = Fantom,
              {x}_project_1 = project_1,
@@ -206,6 +207,7 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
              SELECT 
                 pc.*,
                 id_comp,
+                comp_ci,
                 ci_total,
                 Fantom,
                 project_1,
@@ -241,6 +243,26 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 ) as last
                 where rnk = 1) as int
                 on pc.id = int.id_hex
+              left join (
+                select
+                id_hex,
+                comp_ci
+                from (
+                	SELECT
+                    id_hex,
+                    bool_or(componente_ciclable) as comp_ci
+                    from (
+                		select 
+                        pc.id as id_hex,
+                        tc.componente_ciclable as componente_ciclable,
+                        st_intersection(tc.geometry,pc.geometry) as geometry
+                        from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
+                        where st_intersects(tc.geometry,pc.geometry) = TRUE
+                        group by id_hex,id_comp,tc.geometry,pc.geometry,tc.componente_ciclable
+                        )
+                	as inter group by id_hex
+                ) as d
+              )
               left join (
                 select
 	                id_hex,
