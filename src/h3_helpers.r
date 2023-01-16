@@ -263,7 +263,8 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                         )
                 	as inter group by id_hex
                 ) as d
-              )
+              ) as int_comp on
+              pc.id = int_comp.id_hex
               left join (
                 select
 	                id_hex,
