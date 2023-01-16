@@ -162,6 +162,7 @@ prepare_hex = function(h_schema,h,nombre_resultado,connec) {
   dbGetQuery(conn = connec,
              glue("ALTER TABLE \"{h_schema}\".\"{h}\"
              add column {nombre_resultado}_id_comp VARCHAR,
+             add column {nombre_resultado}_comp_ci VARCHAR,
              add column {nombre_resultado}_ci_total VARCHAR,
              add column {nombre_resultado}_Fantom VARCHAR,
              add column {nombre_resultado}_project_1 VARCHAR,
