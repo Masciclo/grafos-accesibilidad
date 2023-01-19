@@ -162,6 +162,8 @@ prepare_hex = function(h_schema,h,nombre_resultado,connec) {
   dbGetQuery(conn = connec,
              glue("ALTER TABLE \"{h_schema}\".\"{h}\"
              add column {nombre_resultado}_id_comp VARCHAR,
+             add column {nombre_resultado}_comp_intersect VARCHAR,
+             add column {nombre_resultado}_comp_total VARCHAR,
              add column {nombre_resultado}_comp_ci VARCHAR,
              add column {nombre_resultado}_ci_total VARCHAR,
              add column {nombre_resultado}_Fantom VARCHAR,
@@ -193,6 +195,8 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
              UPDATE \"{h_schema}\".\"{h}\"
              set {x}_id_comp = id_comp,
              {x}_comp_ci = comp_ci,
+             {x}_comp_intersect = comp_intersect,
+             {x}_comp_total = comp_total,
              {x}_ci_total = ci_total,
              {x}_Fantom = Fantom,
              {x}_project_1 = project_1,
@@ -209,6 +213,8 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
                 pc.*,
                 id_comp,
                 comp_ci,
+                comp_intersect,
+                comp_total,
                 ci_total,
                 Fantom,
                 project_1,
@@ -224,26 +230,61 @@ to_h3 = function(h_schema,h,x_schema,x,connec) {
               left join (
                 select 
                   id_hex,
-                  id_comp
-                from (
-                  SELECT
-                    id_hex,
-                    id_comp,
-                    row_number() over (partition by id_hex order by largo desc) as rnk,
-                    largo
+                  l.id_comp,
+				          comp_total
                   from (
-                	  select 
-                	  	pc.id as id_hex,
-                	  	tc.id_comp as id_comp,
-                	  	st_intersection(tc.geometry,pc.geometry) as geometry,
-                	  	sum(st_length(tc.geometry)) as largo	
-                	  from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
-                	  where st_intersects(tc.geometry,pc.geometry) = TRUE
-                	  group by id_hex,id_comp,tc.geometry,pc.geometry
-                  ) as inter
-                ) as last
-                where rnk = 1) as int
-                on pc.id = int.id_hex
+                    SELECT
+                      id_hex,
+                      id_comp,
+                      row_number() over (partition by id_hex order by largo desc) as rnk,
+                      largo
+                    from (
+                	    select 
+                	  	  pc.id as id_hex,
+                	  	  tc.id_comp as id_comp,
+                	  	  st_intersection(tc.geometry,pc.geometry) as geometry,
+                	  	  sum(st_length(tc.geometry)) as largo	
+					            from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
+                	    where st_intersects(tc.geometry,pc.geometry) = TRUE
+                	    group by id_hex,id_comp,tc.geometry,pc.geometry
+                    ) as inter
+                    ) as l,
+                    (select
+                        id_comp,
+                        sum(st_length(geometry)) as comp_total
+                     from \"{x_schema}\".\"{x}\"
+                     group by id_comp) as largo_componentes
+                     where rnk = 1 and l.id_comp = largo_componentes.id_comp) as int
+              on pc.id = int.id_hex
+              left join(
+                select
+                  id_hex,
+                  len as comp_intersect
+                  	from (
+                  	select
+                  	id_hex,
+                  	id_comp,
+                  	row_number() over (partition by id_hex order by sum(largo) desc) as rnk,
+                  	sum(largo) as len
+                  	from (
+                            SELECT
+                            id_hex,
+                            id_comp,
+                            st_length(geometry) as largo
+                            from (
+                  			select 
+                              pc.id as id_hex,
+                              tc.id_comp as id_comp,
+                              st_intersection(tc.geometry,pc.geometry) as geometry
+                              from \"{x_schema}\".\"{x}\" tc, \"{h_schema}\".\"{h}\" pc
+                              where st_intersects(tc.geometry,pc.geometry) = TRUE
+                              group by id_hex,id_comp,tc.geometry,pc.geometry
+                  		   ) as inter 
+                  			group by id_hex,id_comp, geometry
+                  	) as s group by id_hex, id_comp) as subq
+                  	where rnk = 1
+              ) as int_comp_intersect
+              on pc.id = int_comp_intersect.id_hex
               left join (
                 select
                 id_hex,
@@ -481,6 +522,8 @@ delete_h3_results = function(h,nombre_escenario,connec) {
   dbGetQuery(conn = connec,
              glue("ALTER TABLE hexs.\"{h}\"
              drop column {nombre_escenario}_id_comp,
+             drop column {nombre_escenario}_comp_intersect, 
+             drop column {nombre_escenario}_comp_total, 
              drop column {nombre_escenario}_comp_ci,
              drop column {nombre_escenario}_ci_total,
              drop column {nombre_escenario}_Fantom,
