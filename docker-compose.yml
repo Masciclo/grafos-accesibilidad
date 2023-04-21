@@ -2,15 +2,13 @@ version: "3"
 
 services:
   fastapi:
-    image: fast-api-stations
+    build: api/
+    depends_on:
+      - postgres
     ports:
-      - "8000:80"
+      - '8000:8000'
 
-  stationdb:
-    image: postgis/postgis
-    environment:
-      POSTGRES_USER: jkaub
-      POSTGRES_PASSWORD: jkaub
-      POSTGRES_DB: stations
-    volumes:
-      - ./db:/var/lib/postgresql/data
+  postgres:
+    build: db/
+    ports:
+      - '5432:5432'

@@ -1,12 +1,19 @@
-# aca iran los servicios asi como tambien la conexion a la base de datos
-
-
-#example:
-
+import os
+from dotenv import load_dotenv
 from sqlmodel import SQLModel, create_engine
-import models
+#import models 
 
-DATABASE_URL = 'postgresql://jkaub:jkaub@localhost/stations'
+#loas env variables
+load_dotenv()
+
+DATABASE_NAME = os.getenv('DATABASE_NAME')
+HOST = os.getenv('HOST')
+PORT = os.getenv('PORT')
+USER = os.getenv('USER')
+PASSWORD = os.getenv('PASSWORD')
+
+#build database url
+DATABASE_URL = 'postgresql://postgres:admin@postgres:5432/masciclo_db'
 
 engine = create_engine(DATABASE_URL)
 
