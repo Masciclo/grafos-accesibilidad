@@ -9,6 +9,7 @@ services:
       - '8000:8000'
 
   postgres:
+    image: postgis/postgis
     build: db/
     ports:
       - '5432:5432'
