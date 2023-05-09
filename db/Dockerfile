@@ -1,5 +1,5 @@
 # Base image
-FROM postgis/postgis:latest
+FROM pgrouting/pgrouting:latest
 
 # Environment variables
 ENV POSTGRES_USER 'postgres'
