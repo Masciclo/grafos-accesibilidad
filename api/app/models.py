@@ -10,55 +10,55 @@ from geoalchemy2.types import Geometry
 class Ciclovias(SQLModel, table=True):
     #Variables de identificación
     id: Optional[int] = Field(default=None,primary_key=True)
-    comuna: str
-    n_ciclo: int #Preguntar
+    district: str
+    id_bike: int #Preguntar
     id_2: int #Preguntar
     date_mtt: int
     date_masciclo: int
-    name_ciclo: str
+    name_bike: str
     #Categorías fundamentales
-    ciclo_o_cruce: int
+    bike_or_crossing: int
     oneway: int
-    phanto:int
+    gap:int
     len_ciclo: float
     #Variables de entorno
-    tipo_via_ciclo: int
-    ancho_calle: float
-    pista_calle: int
-    tipo_via_cruce: int
+    road_type_bike: int
+    road_width: float
+    road_num_lane: int
+    road_type_cross: int
     #Variables tipológicas
-    ciclo_calle: int
-    ciclo_vereda: int
-    ciclo_plata_banda: int
-    ciclo_bandejon: int
-    ciclo_parque: int
-    otro_ciclo: int
-    tipo_ciclo: str
+    type_road: int
+    type_sidewalk: int
+    type_verge: int
+    type_median: int
+    type_green_way: int
+    type_other: int
+    type_summary: str
     #Variables de calidad ciclovias
-    material: str
-    ancho_via: float
-    ancho_segregacion: float
-    tipo_segregacion_vereda: int
-    tipo_segregacion_calle: int
-    color_pavimento: int
-    lineas_pavimento: int
+    bike_material: str
+    bike_width_surface: float
+    bike_width_segregation: float
+    bike_width_segregation_sidewalk_type: int
+    bike_width_segregation_road_type: int
+    bike_paint_surface: int
+    bike_paint_demarcation: int
     #Variables de calidad cruces
-    senalizado: int
-    pintado: int
-    semaforo: int
-    cartel: int
-    aproximacion_cruce: int
-    otro_cruce: int
+    cross_paint_demarcation: int
+    cross_paint_surface: int
+    cross_traffic_ligth: int
+    cross_traffic_sign: int
+    cross_aproximation: int
+    cross_other: int
     #Variables de proyecto
-    proyectado: int #Preguntar
-    id_proyecto: int
+    proyect_level: int #Preguntar
+    proyect_id: int
     #Variable de calidad
-    operatividad_ciclo: int
-    operatividad_superficie: int
-    operatividad_segregacion_calle: int
-    operatividad_segregacion_vereda: int
-    operatividad_demarcacion: int
-    operatividad_cruce: int
+    conflict_bike: int
+    conflict_by_surface: int
+    conflict_by_traffic_motorized: int
+    conflict_by_traffic_pedestrian: int
+    conflict_by_illegible: int
+    conflict_cross: int
     geometry: Optional[Any] = Field(sa_column=Column(Geometry('GEOMETRY')))
 
 class OSM(SQLModel, table=True):
