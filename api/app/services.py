@@ -6,6 +6,7 @@ from sqlmodel import SQLModel, create_engine
 #loas env variables
 load_dotenv()
 
+# Variables
 DATABASE_NAME = os.getenv('DATABASE_NAME')
 HOST = os.getenv('HOST')
 PORT = os.getenv('PORT')

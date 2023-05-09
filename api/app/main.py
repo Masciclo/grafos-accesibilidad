@@ -5,13 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from .models import Cities, Stations, GasPrices
 from .services import engine, create_db_and_tables
-# to load env variables
-
 
 #We create an instance of FastAPI
 app = FastAPI()
-
-
 
 #We define authorizations for middleware components
 app.add_middleware(
@@ -31,5 +27,5 @@ def on_startup():
 
 @app.get("/")
 async def read_root():
-    path = os.getcwd()
+    # code here
     return {"Hello": "nacho"}, 
