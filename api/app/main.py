@@ -1,31 +1,53 @@
-# este el archivo de la api, donde estaran los endpoints
+import os
+from google.cloud import storage
+import pandas as pd
+from sqlalchemy import create_engine, text
+from geoalchemy2 import Geometry, WKTElement
+from shapely.geometry import Point
+# work with env variables
+from dotenv import load_dotenv
 
-#importing libraries
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException
-from .models import Cities, Stations, GasPrices
-from .services import engine, create_db_and_tables
+#loas env variables
+load_dotenv()
 
-#We create an instance of FastAPI
-app = FastAPI()
+#define variables of GCP and SQL.
+URL_ENGINE = os.getenv('URL_ENGINE')
+BUCKET_NAME = os.getenv('BUCKET_NAME')
 
-#We define authorizations for middleware components
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:8000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Create storage client
+storage_client = storage.Client()
 
-#We use a callback to trigger the creation of the table if they don't exist yet
-#When the API is starting
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
+def process_csv(data, context):
+    """Background Cloud Function to be triggered by Cloud Storage.
+       This function gets executed when a file is uploaded to Google Cloud Storage"""
+    bucket_name = data[BUCKET_NAME]
+    file_name = data['name']
+    blob = storage_client.get_bucket(bucket_name).blob(file_name)
 
+    # Download the contents of the blob as a string
+    data = blob.download_as_text()
+    
+    # Read the CSV data using pandas
+    df = pd.read_csv(data)
+    
+    # Convert latitude and longitude to a Point object
+    df['geom'] = df.apply(lambda row: WKTElement(Point(row['longitude'], row['latitude']).wkt, srid=4326), axis=1)
+    
+    # Drop latitude and longitude as it's no longer required
+    df = df.drop(['longitude', 'latitude'], axis=1)
+    
+    # Create SQLAlchemy engine
+    engine = create_engine('postgresql://user:password@localhost/your-database-name')
 
-@app.get("/")
-async def read_root():
-    # code here
-    return {"Hello": "nacho"}, 
+    # Write DataFrame to PostgreSQL
+    df.to_sql('your-table-name', engine, if_exists='append', index=False, dtype={'geom': Geometry('POINT', srid=4326)})
+    
+    # Execute your PostGIS and pgRouting SQL queries
+    with engine.connect() as connection:
+        result = connection.execute(text("""
+            -- Your SQL query goes here
+        """))
+    
+    # Write results back to GCS as a CSV
+    results_df = pd.DataFrame(result.fetchall())
+    results_df.to_csv('gs://your-bucket-name/results.csv')
