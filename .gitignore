@@ -10,3 +10,4 @@ shp_graph_metrics/*.RData
 *.Rbuildignore
 .Rproj.user
 api/app/.env
+data

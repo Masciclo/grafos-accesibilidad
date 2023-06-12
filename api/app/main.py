@@ -15,8 +15,8 @@ import sys
 import utils
 
 parser = argparse.ArgumentParser(description='Run necessary queries to create the tables with results in postgreSQL')
-parser.add_argument("--inhibir", dest="inhibir", required=True, type=int, help="inhibir o no la red")
-parser.add_argument("--inhibir", dest="inhibir", required=True, type=int, help="inhibir o no la red")
+parser.add_argument("--inhibidores", dest="inhib", required=True, type=int, help="inhibir o no la red")
+parser.add_argument("--desinhibidores", dest="desinhib", required=True, type=int, help="desinhibir o no la red")
 
 
 #load env variables
@@ -37,14 +37,38 @@ def data_pipeline(file_path, table_name, queries):
     - Input: path of csv file, tabla name in postgres of the result, 
     list of queries (str).
     '''
+
+
+    #Import ciclo
+    #Import osm
+    #full_network = create_full_network.sql
+    #If inhibidores
+        #Import inhibidores
+        #bf_inhibidores = create_buffer(inhibidores)
+    #If desinhibidores
+        #Import desinhibidores
+        #bf_desinhibidores = create_buffer(desinhibidores)
+    #bf_final = buffer_difference(buffer_inhibidores,buffer_desinhibidores)
+    #final_network = delete_line_segments_in_polygon(full_network,bf_final)  
+    #create_clean_topology(final_network)
+    #
+    
+    query_list = ['create_full_network.sql','','','','','']
+    
     # Read CSV to DataFrame
-    df = utils.read_csv_to_df(file_path)
+    df_red = utils.read_csv_to_df(file_path)
+    df_ciclos = utils.read_csv_to_df(file_path)
 
     # Connect to PostgreSQL
     conn = utils.create_conn(DATABASE_NAME,HOST,PORT,USER,PASSWORD)
 
     # Insert DataFrame into PostgreSQL
-    utils.df_to_postgres(df, table_name)
+    utils.df_to_postgres(df_red, table_name)
+    utils.df_to_postgres(df_ciclos, table_name)
+
+    utils.execute_query_with_params(conn, query)
+
+    params = ()
 
     # Execute SQL queries
     for query in queries:

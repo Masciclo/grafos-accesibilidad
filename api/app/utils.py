@@ -40,8 +40,17 @@ def read_sql_file(file_path):
         sql = file.read()
     return sql
 
+def read_sql_file(file_path):
+    '''
+    Description: read an SQL file and create a string object with the query 
+    Input: path of SQL file
+    '''
+    with open(file_path, 'r') as file:
+        sql = file.read()
+    return sql
 
 def execute_query_with_params(conn, query, params):
     with conn.cursor() as cursor:
         cursor.execute(query, params)
         conn.commit()
+
