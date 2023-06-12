@@ -18,7 +18,7 @@ def read_csv_to_df(file_path):
     Description: This function read some csv in the localhost
     Input: path of csv file
     '''
-    df = pd.read_csv(file_path)
+    df = gpd.read_file(file_path)
     return df
 
 
@@ -27,7 +27,7 @@ def df_to_postgres(df, table_name):
     Description: upload a df object into a database
     Input: df object (from read_csv_to_df function) and a name for the table   
     '''
-    engine = create_engine('postgresql://username:password@localhost:5432/mydatabase')
+    engine = create_engine(f'postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE_NAME}')
     df.to_sql(table_name, engine, if_exists='replace', index=False)
 
 

@@ -1,16 +1,9 @@
 version: "3"
 
 services:
-  fastapi:
-    image: fast-api-stations
-    ports:
-      - "8000:80"
-
   stationdb:
-    image: postgis/postgis
+    image: pgrouting/pgrouting
     environment:
       POSTGRES_USER: jkaub
       POSTGRES_PASSWORD: jkaub
       POSTGRES_DB: stations
-    volumes:
-      - ./db:/var/lib/postgresql/data
