@@ -50,7 +50,7 @@ class RecommendationEngine:
             self.db_config['password']
         )
 
-    def run_recommendation_pipeline(self, prompt: str, reference_scenario: str, sample_size: int, study_area_bbox: list, budget_m: float = 1500.0, num_projects: int = 10) -> str:
+    def run_recommendation_pipeline(self, prompt: str, reference_scenario: str, sample_size: int, study_area_bbox: list, budget_m: float = 1500.0, num_projects: int = 10, auto_accept: bool = False) -> str:
         """
         Orchestrates the entire generative cycleway optimization pipeline:
         1. Launches the interactive grilling session to collect project definitions.
@@ -64,7 +64,7 @@ class RecommendationEngine:
         self.logger.log(f"Initialized RecommendationEngine for city: {self.city_key}, scenario: {scenario_id}")
 
         console.print(Panel(
-            "[bold green]🤖 INITIALIZING INTERACTIVE PROJECT GRILLING SESSION (+CICLO)[/]\n"
+            "[bold green]🤖 INITIALIZING PROJECT GRILLING SESSION (+CICLO)[/]\n"
             "We will step-by-step define your bike lane expansion projects, custom growth algorithms, and locations.",
             title="Grilling Session", border_style="green"
         ))
@@ -76,9 +76,10 @@ class RecommendationEngine:
         grill_agent = InteractiveGrillAgent(ontology_data=ontology_data)
         grill_agent.render_city_diagnostic_panel()
         
-        # Start grilling loop with a simple welcome message
+        # Start grilling loop with user prompt content
+        initial_content = prompt if prompt else "Hello, let's start the grilling session to define projects."
         messages = [
-            {"role": "user", "content": "Hello, let's start the grilling session to define projects."}
+            {"role": "user", "content": initial_content}
         ]
         
         project_config = None
@@ -94,6 +95,14 @@ class RecommendationEngine:
                     project_config.num_projects = int(num_projects)
                 break
             else:
+                if auto_accept:
+                    turn = grill_agent._heuristic_grill_turn(messages)
+                    project_config = turn.config
+                    if budget_m and budget_m > 0:
+                        project_config.budget_meters = int(budget_m)
+                    if num_projects and num_projects > 0:
+                        project_config.num_projects = int(num_projects)
+                    break
                 # Print question in bold yellow
                 console.print(f"\n[bold yellow]🤖 +Ciclo: {turn.next_question}[/]")
                 user_reply = Prompt.ask("[bold green]You[/]")
@@ -115,10 +124,13 @@ class RecommendationEngine:
                 title="Consolidated Project Configuration Summary", border_style="cyan"
             ))
             
-            choice = Prompt.ask(
-                "[bold yellow]Do you want to APPROVE this configuration? (Y: Approve/Yes, R: Refine with comments, N: Restart grilling)[/]",
-                choices=["Y", "R", "N"], default="Y"
-            ).upper()
+            if auto_accept:
+                choice = "Y"
+            else:
+                choice = Prompt.ask(
+                    "[bold yellow]Do you want to APPROVE this configuration? (Y: Approve/Yes, R: Refine with comments, N: Restart grilling)[/]",
+                    choices=["Y", "R", "N"], default="Y"
+                ).upper()
             
             if choice == "Y":
                 break
@@ -162,9 +174,13 @@ class RecommendationEngine:
         projects_list = []
         # Support replicating config across the requested number of projects with distinct topological seeds
         for idx in range(project_config.num_projects):
+            if idx == 0 and seed_edge_ids:
+                proj_seeds = seed_edge_ids
+            else:
+                proj_seeds = self._detect_growth_seeds(None, reference_scenario, offset=idx)
             projects_list.append({
                 "config": project_config,
-                "seed_edge_ids": self._detect_growth_seeds(None, reference_scenario, offset=idx)
+                "seed_edge_ids": proj_seeds
             })
 
         # Display final project table only if there are multiple projects
@@ -187,7 +203,10 @@ class RecommendationEngine:
             console.print(table)
 
             # Final launch confirmation
-            confirm = Prompt.ask("[bold yellow]Do you want to launch the consolidated simulation with all these projects? (Y/N)[/]", choices=["Y", "N"], default="Y").upper()
+            if auto_accept:
+                confirm = "Y"
+            else:
+                confirm = Prompt.ask("[bold yellow]Do you want to launch the consolidated simulation with all these projects? (Y/N)[/]", choices=["Y", "N"], default="Y").upper()
             if confirm == "N":
                 console.print("[bold red]Simulation cancelled by user.[/]")
                 return ""
@@ -234,7 +253,7 @@ class RecommendationEngine:
         seed_edge_ids = []
         
         try:
-            if seed_target:
+            if seed_target and seed_target.lower() not in ["clusters", "componentes", "cluster", "componente", "brechas", "red"]:
                 poi_path = os.path.join(self.data_base_path, self.city_key, "proc", "toponymy", "poi_temp_seed.geojson")
                 query = f"""
                 [out:json][timeout:25][bbox:{{bbox}}];

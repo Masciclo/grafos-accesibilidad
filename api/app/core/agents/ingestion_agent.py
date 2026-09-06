@@ -8,6 +8,7 @@ from google.genai import types
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from core.metadata_agent import generate_content_with_retry
+from core.ontology import SanitationRecipe
 
 class LLMSanitationRecipeSchema(BaseModel):
     archive_files: List[str] = Field(default=[], description="List of auxiliary filenames to move to the unused/ folder to prevent ambiguity (e.g. Manzanas, Macrozonas).")

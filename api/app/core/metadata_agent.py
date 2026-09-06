@@ -52,12 +52,27 @@ def generate_content_with_retry(client, **kwargs):
 class MetadataAgent:
     def __init__(self):
         # The SDK automatically uses GEMINI_API_KEY from environment
-        self.client = genai.Client()
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.client = None
+        if self.api_key:
+            try:
+                self.client = genai.Client(api_key=self.api_key)
+            except Exception:
+                self.client = None
 
     def parse_recommendation_prompt(self, prompt: str) -> PlanningParameters:
         """
         Parses the planner's qualitative prompt into quantitative parameters using Gemini.
         """
+        if not self.client:
+            return PlanningParameters(
+                budget_meters=3000.0,
+                max_components=1,
+                min_segment_length=0.0,
+                max_segment_length=2000.0,
+                osm_poi_types=[],
+            )
+
         system_instructions = """
         You are an expert urban active-mobility planning agent. Your task is to parse a qualitative
         infrastructure recommendation prompt into structured optimization parameters.
@@ -95,6 +110,18 @@ class MetadataAgent:
                 osm_poi_types=[],
             )
 
+    def _build_fallback_overpass_query(self, poi_types: list[str], locations: list[str] = None) -> str:
+        fallback_query = "[out:json][timeout:25][bbox:{bbox}];\n(\n"
+        if poi_types:
+            for t in poi_types:
+                fallback_query += f'  node["amenity"="{t}"];\n  way["amenity"="{t}"];\n'
+                fallback_query += f'  node["leisure"="{t}"];\n  way["leisure"="{t}"];\n'
+        if locations:
+            locs_regex = "|".join(locations)
+            fallback_query += f'  node["place"~"suburb|neighbourhood|quarter"]["name"~"{locs_regex}",i];\n'
+        fallback_query += ");\nout center;"
+        return fallback_query
+
     def generate_overpass_query(self, poi_types: list[str], locations: list[str] = None) -> str:
         """
         Generates an Overpass QL query string based on target POI types and spatial locations.
@@ -102,6 +129,9 @@ class MetadataAgent:
         if not poi_types and not locations:
             return ""
             
+        if not self.client:
+            return self._build_fallback_overpass_query(poi_types, locations)
+
         system_instructions = f"""
         Generate an Overpass QL query string to download nodes, ways, or relations for target POI types: {poi_types} and locations/neighborhoods: {locations}.
         Rules:
@@ -138,17 +168,7 @@ class MetadataAgent:
             return query_obj.query
         except Exception as e:
             print(f"[MetadataAgent Error] Overpass query generation failed: {e}")
-            # Safe generic query fallback utilizing global header bbox
-            fallback_query = "[out:json][timeout:25][bbox:{bbox}];\n(\n"
-            if poi_types:
-                for t in poi_types:
-                    fallback_query += f'  node["amenity"="{t}"];\n  way["amenity"="{t}"];\n'
-                    fallback_query += f'  node["leisure"="{t}"];\n  way["leisure"="{t}"];\n'
-            if locations:
-                locs_regex = "|".join(locations)
-                fallback_query += f'  node["place"~"suburb|neighbourhood|quarter"]["name"~"{locs_regex}",i];\n'
-            fallback_query += ");\nout center;"
-            return fallback_query
+            return self._build_fallback_overpass_query(poi_types, locations)
 
 class HighwayMultiplier(BaseModel):
     highway_type: str = Field(description="Highway type name, e.g., 'primary', 'secondary', 'tertiary', 'residential'")
@@ -171,7 +191,13 @@ class GrillSessionTurn(BaseModel):
 
 class InteractiveGrillAgent:
     def __init__(self, ontology_data: Optional[dict] = None):
-        self.client = genai.Client()
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.client = None
+        if self.api_key:
+            try:
+                self.client = genai.Client(api_key=self.api_key)
+            except Exception:
+                self.client = None
         self.agents_dir = os.path.join(os.path.dirname(__file__), "agents")
         self.ontology_data = ontology_data
 
@@ -208,7 +234,92 @@ class InteractiveGrillAgent:
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
 
+    def _heuristic_grill_turn(self, messages_history: list[dict]) -> GrillSessionTurn:
+        """
+        Deterministic, offline rule-based parser that maps user prompts to ProjectConfig
+        according to the +Ciclo Urban Recommendation Taxonomy (Ontology v1).
+        Provides complete fault tolerance when Gemini API is unavailable, offline, or quota-exceeded.
+        """
+        import re
+        user_texts = [m.get("content", "") for m in messages_history if m.get("role") == "user"]
+        full_text = " ".join(user_texts).lower()
+
+        # 1. Number of projects / clusters
+        num_projects = 1
+        num_match = re.search(r'(\d+)\s*(?:clusters?|proyectos?|componentes?|corredores?|ejes?)', full_text)
+        if num_match:
+            try:
+                num_projects = max(1, int(num_match.group(1)))
+            except ValueError:
+                num_projects = 1
+        elif "dos" in full_text:
+            num_projects = 2
+        elif "tres" in full_text:
+            num_projects = 3
+        elif "cuatro" in full_text:
+            num_projects = 4
+        elif "cinco" in full_text:
+            num_projects = 5
+
+        # 2. Budget in meters
+        budget_meters = 1500.0
+        budget_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:m|metros|km|kil[oó]metros)', full_text)
+        if budget_match:
+            val = float(budget_match.group(1))
+            if "km" in full_text:
+                budget_meters = val * 1000.0
+            else:
+                budget_meters = val
+
+        # 3. Target locations / Seed & Gravity
+        seed_target = "clusters"
+        gravity_attractor = ""
+
+        if "hacia" in full_text:
+            towards_match = re.search(r'hacia\s+([a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+)', full_text)
+            if towards_match:
+                gravity_attractor = towards_match.group(1).strip()
+        elif "centro" in full_text:
+            gravity_attractor = "centro"
+
+        # Check for specific seed targets
+        for kw in ["isla teja", "niebla", "las condes", "providencia", "nunoa", "centro", "plaza", "universidad"]:
+            if kw in full_text:
+                seed_target = kw
+                break
+
+        # Standard street hierarchy lambdas
+        highway_lambdas = [
+            HighwayMultiplier(highway_type="primary", multiplier=0.5),
+            HighwayMultiplier(highway_type="secondary", multiplier=0.5),
+            HighwayMultiplier(highway_type="tertiary", multiplier=0.5),
+            HighwayMultiplier(highway_type="residential", multiplier=0.5),
+            HighwayMultiplier(highway_type="trunk", multiplier=0.5),
+            HighwayMultiplier(highway_type="primary_link", multiplier=0.5),
+            HighwayMultiplier(highway_type="secondary_link", multiplier=0.5),
+            HighwayMultiplier(highway_type="tertiary_link", multiplier=0.5),
+        ]
+
+        config = ProjectConfig(
+            num_projects=num_projects,
+            budget_meters=budget_meters,
+            highway_lambdas=highway_lambdas,
+            location_and_orientation=LocationOrientation(
+                seed_target=seed_target,
+                gravity_attractor=gravity_attractor
+            )
+        )
+
+        return GrillSessionTurn(
+            status="COMPLETE",
+            config=config,
+            next_question=None
+        )
+
     def grill_turn(self, messages_history: list[dict]) -> GrillSessionTurn:
+        if not self.client:
+            return self._heuristic_grill_turn(messages_history)
+
         system_instruction = self._load_prompt("grill_consolidado.md")
         
         if self.ontology_data:
@@ -222,18 +333,23 @@ class InteractiveGrillAgent:
         
         prompt_content = "\n".join(contents)
         
-        response = generate_content_with_retry(
-            self.client,
-            model='gemini-2.5-flash',
-            contents=prompt_content,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-                response_schema=GrillSessionTurn,
-                temperature=0.2
+        try:
+            response = generate_content_with_retry(
+                self.client,
+                model='gemini-2.5-flash',
+                contents=prompt_content,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    response_mime_type="application/json",
+                    response_schema=GrillSessionTurn,
+                    temperature=0.2
+                )
             )
-        )
-        return GrillSessionTurn.model_validate_json(response.text)
+            return GrillSessionTurn.model_validate_json(response.text)
+        except Exception as e:
+            from rich.console import Console
+            Console().print(f"[bold yellow]⚠️ Gemini LLM call unavailable ({e}). Falling back to deterministic heuristic recommendation engine.[/]")
+            return self._heuristic_grill_turn(messages_history)
 
 
 

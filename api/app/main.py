@@ -79,6 +79,7 @@ def main():
     parser.add_argument("--manual_digitization_error", "--project_geographic_reach", "--project_influence_dist", dest="manual_digitization_error", type=float, default=25.0, help="Manual Digitization Error tolerance buffer in meters around project corridors for spatial snapping and audit")
 
     args = parser.parse_args()
+    args.yes = args.force_yes
     args.machine_hash = telemetry_manager.machine_hash # Inject for UI
 
     # --- Phase 12: Interactive Session Loop ---
@@ -247,23 +248,25 @@ def main():
                 
                 api_key = os.getenv("GEMINI_API_KEY")
                 if not api_key:
-                    console.print("\n[bold yellow]🔑 GEMINI API KEY IS REQUIRED FOR ACTIVE AGENT[/]")
-                    try:
-                        api_key = input("Enter your GEMINI_API_KEY (leave blank to exit): ").strip()
-                    except (KeyboardInterrupt, EOFError):
-                        api_key = ""
-                    if not api_key:
-                        console.print("[bold red]Error:[/] GEMINI_API_KEY not provided. Recommendation engine aborted.")
-                        sys.exit(1)
-                    
-                    env_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".env")
-                    try:
-                        with open(env_file_path, "a") as f:
-                            f.write(f"\nGEMINI_API_KEY={api_key}\n")
-                        os.environ["GEMINI_API_KEY"] = api_key
-                        console.print("[bold green]Key saved successfully to configuration.[/]")
-                    except Exception as e:
-                        console.print(f"[bold red]Warning:[/] Could not save key to .env: {e}")
+                    if args.yes:
+                        console.print("[bold yellow]Notice: GEMINI_API_KEY not set. Autonomous mode will use deterministic heuristic engine.[/]")
+                    else:
+                        console.print("\n[bold yellow]🔑 GEMINI API KEY IS OPTIONAL FOR ACTIVE AGENT[/]")
+                        try:
+                            api_key = input("Enter your GEMINI_API_KEY (leave blank to run in offline heuristic mode): ").strip()
+                        except (KeyboardInterrupt, EOFError):
+                            api_key = ""
+                        if api_key:
+                            env_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".env")
+                            try:
+                                with open(env_file_path, "a") as f:
+                                    f.write(f"\nGEMINI_API_KEY={api_key}\n")
+                                os.environ["GEMINI_API_KEY"] = api_key
+                                console.print("[bold green]Key saved successfully to configuration.[/]")
+                            except Exception as e:
+                                console.print(f"[bold red]Warning:[/] Could not save key to .env: {e}")
+                        else:
+                            console.print("[bold cyan]Proceeding with offline heuristic recommendation engine.[/]")
                 
                 console.print(f"\n[bold green]🤖 INITIALIZING AI RECOMMENDATION AGENT FOR: {target_loc}[/]")
                 from core.recommendation import RecommendationEngine
@@ -275,7 +278,8 @@ def main():
                     sample_size=args.rec_sample_size,
                     study_area_bbox=study_area_bbox,
                     budget_m=args.rec_budget_m,
-                    num_projects=args.rec_num_projects
+                    num_projects=args.rec_num_projects,
+                    auto_accept=args.yes
                 )
                 
                 if not rec_geojson_path:
